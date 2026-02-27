@@ -6,6 +6,7 @@ tags: [Tableau, Data Viz]
 ---
 
 This is a Tableau Dashboard that tracks global Earthquake activity across a 30-day period in 2022.
-Best viewed from Tableau Public. Use the 'View on Tableau Public' link in the preview window below to open a new tab
+It is best viewed from Tableau Public. 
+Please use the 'View on Tableau Public' link in the preview window below to open a new tab in your browser for a clean view
 
 <iframe seamless frameborder="0" src="https://public.tableau.com/views/DSIEarthquakeDashboard_17708743957620/DSIEarthquakeTracker?:embed=yes&:display_count=yes&:showVizHome=no" width = '1090' height = '900'></iframe>
