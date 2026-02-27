@@ -2,7 +2,7 @@
 layout: post
 title: A Workplace Placement Project - Delirium Incidence Patterns in a Hospital ICU
 image: "/posts/WPP.png"
-tags: [Biostatistics, Ratio Modelling]
+tags: [Biostatistics, Modelling, Stata]
 ---
 
 
@@ -14,7 +14,7 @@ It achieved this using bed-level and patient-level parameterisation in generalis
 
 
 
-<embed src="/docs/workplace-placement-project2.pdf"
+<embed src="/docs/WPP_Richard_Hardy_ICUDelirium_report.pdf"
        type="application/pdf"
        width="100%"
        height="800px" />
