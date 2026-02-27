@@ -5,4 +5,4 @@ image: "/posts/WPP.png"
 tags: [Biostatistics, Ratio Modelling]
 ---
 
-[placeholder: pdf from portfolio]
+[placeholder: pdf from prev. portfolio]
