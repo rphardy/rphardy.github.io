@@ -338,3 +338,4 @@ $$;
 /* RUN ALL AS FUNCTION */
 
 select jsonb_pretty(run_campaign_analysis('delivery_club'));
+```
