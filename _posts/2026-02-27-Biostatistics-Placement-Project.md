@@ -5,4 +5,4 @@ image: "/posts/WPP.png"
 tags: [Biostatistics, Ratio Modelling]
 ---
 
-placeholder: pdf from prev. portfolio
+placeholder for pdf from prev. portfolio at: https://rphardy.github.io/Portfolio/delirium.html
