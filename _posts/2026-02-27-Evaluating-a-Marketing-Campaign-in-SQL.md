@@ -1,7 +1,7 @@
 ---
 layout: post
 title: Evaluating a Marketing Campaign using SQL
-image: "/posts/primes_image.png"
+image: "/posts/primes_image.jpeg"
 tags: [SQL, Statistical Assumptions, Analysis Piping]
 ---
 
