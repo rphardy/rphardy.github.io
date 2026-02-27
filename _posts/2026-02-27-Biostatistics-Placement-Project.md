@@ -14,7 +14,7 @@ It achieved this using bed-level and patient-level parameterisation in generalis
 
 
 
-<embed src="/docs/workplace-placement-project.pdf"
+<embed src="/docs/workplace-placement-project2.pdf"
        type="application/pdf"
        width="100%"
        height="800px" />
