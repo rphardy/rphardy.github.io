@@ -8,7 +8,7 @@ plugins:
 
 #-------------------------------
 # General Site Settings
-title: Richard Hardy, BHSc MBiostats
+title: Richard Hardy, MBiostats
 description: "Hi, I'm Rick, a Data Scientist. My portfolio showcases projects where I extract reliable insights from complex challenges. Please visit my GitHub, LinkedIn, or download my résumé using the links below."
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "" # the base hostname & protocol for your site, e.g. http://example.com
@@ -51,6 +51,7 @@ defaults:
 #   - vendor/cache/
 #   - vendor/gems/
 #   - vendor/ruby/
+
 
 
 
