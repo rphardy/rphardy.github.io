@@ -1,11 +1,13 @@
 ---
 layout: post
-title: Evaluating a Marketing Campaign in SQL
+title: Evaluating a Marketing Campaign using SQL
 image: "/posts/primes_image.png"
 tags: [SQL, Statistical Assumptions, Analysis Piping]
 ---
 
 This SQL program produces an analytical pipeline to measure the effectiveness of a mail-out marketing campaign, and builds a single function to apply the same analysis to a new campaign
+
+```sql
 
 /************************************************************************************************************************************************************************************************************/
 /*                                                                                                                                                                                                          */
