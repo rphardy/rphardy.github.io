@@ -84,7 +84,7 @@ First Lines of Expected Json Output:
 
 /******************************************************************************************************************************************************************/
 ```
-Let's begin the analysis with step one: linking customer details and customers-in-campaign data. We'll use best-practice data linkage to view a full master linkage map (MLM) of the customer population in both sets. For this data, all customers can be linked successfully to an id in the campaign data, so our unlinked sets should be null, and our MLM is simply all customers in the campaign linked by id key to their details (of interest for this analysis: their gender).
+Let's begin the analysis with step one: linking customer details and customers-in-campaign data. We'll use best-practice data linkage to view a full master linkage map (MLM) of the customer population in both sets. For this data, all customers can be linked successfully to an id in the campaign data, so our unlinked sets should be null, and our MLM is simply all customers in the campaign linked by id key to their details.
 ```sql
    
 /* STEP 1) LINKAGE BEST PRACTICE */
