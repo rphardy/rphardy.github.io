@@ -17,7 +17,7 @@ Beginning with the Objectives, which are to:
 - Retrieve, for each gender and mailer type in the data: number of customers, signups (successes) and sign-up percentage (mailer success metric)
 - Wrap all steps in a function to run the anaysis from a single function call, outputting a json file containing all required outputs.
 
-We can describe the whole project using a header.
+We'll describe the project using a header for future reference:
 
 ```sql
 
