@@ -84,7 +84,7 @@ First Lines of Expected Json Output:
 
 /******************************************************************************************************************************************************************/
 ```
-Let's begin analysing with step one: linking customer details and their campaign data from two sets, using best practice data linkage. 
+Let's begin the analysis with step one: linking customer details and customers-in-campaign data. We'll use best-practice data linkage to view a full master linkage map (MLM) of the customer population in both sets. For this data, all customers can be linked successfully to an id in the campaign data, so our unlinked sets should be null, and our MLM is simply all customers in the campaign linked by id key to their details (of interest for this analysis: their gender).
 ```sql
    
 /* STEP 1) LINKAGE BEST PRACTICE */
@@ -121,17 +121,18 @@ create temp table linkage as (
 We now have three sets containing all linked and unlinked customer ids from both sources.
 They are:
 ```
-/* check set 1 of 3 : This should be an empty set for the grocery_db "delivery_club" data*/  
+/* check set 1 of 3 : This should be an empty set for the grocery_db "delivery_club" data */  
 select * from linkage where cust_join_type = 'custs_not_in_campaign' order by customer_id; 
 
-/* check set 2 of 3 : This should be an empty set for the grocery_db "delivery_club" data*/
+/* check set 2 of 3 : This should be an empty set for the grocery_db "delivery_club" data */
 select * from linkage where cust_join_type = 'in_campaign_not_custs' order by customer_id;
 
-/* check set 3 of 3 : The linked analysis set. This contains all data in grocery_db now linked in customer_id for "delivery_club" */
+/* check set 3 of 3 : The linked analysis set. This contains all data in grocery_db now linked in customer_id for for the "delivery_club" campaign */
 select * from linkage where cust_join_type = 'custs_in_campaign' order by customer_id;
 ```
 
 Using our linked set, it's now straightforward to define our target population and run our analysis. Let's use CTE followed by a single query to run the analysis:
+Firstly, defining target population as all linked customers:
 
 ```sql
 /* STEP 2) ANALYSIS QUERY ON LINKED DATA : DEFINE TARGET POPULATION AND RUN ANALYSIS */
@@ -143,7 +144,12 @@ from
   linkage 
 where 
   cust_join_type = 'custs_in_campaign')
+```
 
+We then create our analysis outcome variable. 
+Note that we define the signup percentage outcome in best-practice statistical format: as the average of a proportion of a binary outcome Success/Failure, excluding nulls to avoid missing signup information biasing our estimate. We could look deeper into the missingness assumption, but generally, we want this to be the proportion of known successes to known failures to inform our reported percentage. 
+
+```sql
 select
     coalesce(gender, 'Unknown') AS gender,
     coalesce(mailer_type, 'Unknown') AS mailer_type,
@@ -185,11 +191,15 @@ having
 order by
     signup_percentage desc;  
 ```
+Note also, we exclude gender and mailer-type combinations with populations less than 5. 
+A) This is too small a sample to draw meaningful inference from. 
+B) Customers in this population could more easily be identified by their characteristics!  
 
+We're almost finished. Lets output some sets to allow future checking of any patterns in missing data that could be informative. Hopefully, all missing data in a future campaign will be missing at random, and missingness is not biasing our results. These sets will allow us to check whether this is true.
 
+If we weren't sure, we could assume our campaign customer details are true for the majority of customers, over our customer details data.
 
 ```sql
-
 
 /* STEP 3) PROVIDE A SET TO ANALYSE M.A.R. ASSUMPTION FOR THE LINKAGE: EXPORT DATA FOR MISSINGNESS ANALYSIS (IF ASSUMING SOURCE OF TRUTH: CAMPAIGN_DATA) */
 
@@ -211,9 +221,10 @@ left join grocery_db.customer_details b
 
 where
     a.campaign_name = 'delivery_club';
+```
+Or, we could assume the customer detail is more accurate reflection of the truth for any discrepancies with the details in the campaign.
 
-
-
+```sql
 /* STEP 4) PROVIDE A SET TO ANALYSE M.A.R. ASSUMPTION FOR THE LINKAGE: EXPORT DATA FOR MISSINGNESS ANALYSIS (IF ASSUMING SOURCE OF TRUTH: CUSTOMER_DATA) */
 
 select
@@ -238,19 +249,28 @@ left join grocery_db.campaign_data a on a.customer_id = b.customer_id
     and a.campaign_name = 'delivery_club';
 
 /* END ANALYSIS */
+```
 
+We've completed our analysis. Let's now wrap this all up in a pipeline to repeat on the next campaign. 
+If our data is in the same clean form, then for the next campaign type, we'll be able to repeat all this in one line of code, using nothing more complex than sql.
+Let's look at the input and output specs of our intended function:
 
-
-/*****************************************************************************************************************************************************************************/
+```sql
+/************************************************************************************************************************************************************/
 /* STEP 5: WRITE A FUNCTION TO REPRODUCE ALL ANALYSIS FOR THE GIVEN CAMPAIGN AND RETURN ALL OUTPUT IN HUMAN-READABLE JSON FORMAT                                             */
 
-/* INPUTS: grocery_db.campaign_data, grocery_db.customer_details                                                                                                             */
+/* INPUTS: grocery_db.campaign_data, grocery_db.customer_details                                                                                            */
 
-/* OUTPUTS: JSON file containing data : 1) The analysis results for the campaign: main interest: sign-up percentage breakdowns,                                              */
-/*                                      2) analysis dataset used, 3-4) customers in/out of campaign/details sets,                                                            */ 
-/*                                      5) missingness from customer details for MAR analysis: source of truth - campaign data ids                                           */
-/*                                      6) missingness from campaign data for MAR analysis: source of truth - campaign detail ids                                            */
+/* OUTPUTS: JSON file containing data : 1) The analysis results for the campaign: main interest: sign-up percentage breakdowns,                             */
+/*                                      2) analysis dataset used, 3-4) customers in/out of campaign/details sets,                                           */ 
+/*                                      5) missingness from customer details for MAR analysis: source of truth - campaign data ids                          */
+/*                                      6) missingness from campaign data for MAR analysis: source of truth - campaign detail ids                           */
+```
 
+We'll provide the user of our function with some instructions on how to access the pipeline. 
+In this example, SQL was built in SQL Workbench J, and JSON files read into R using the jsonlite package.
+
+```sql
 /* TO ACCESS OUTPUTS: Save SQL Workbench J Output in cell below: 'jsonb_pretty' in Result 7 result tab as text: "YOUR_FILE.TXT". Then in Rstudio for e.g.: copy and run      */
 /*                    the following to compile and view:                                                                                                                     */
 /*
@@ -262,7 +282,12 @@ View(x$custs_not_in_campaign)
 View(x$in_campaign_not_custs)
 View(x$missingness_from_campaign)
 View(x$missingness_from_customer_details)                                                                                                                                     */
-/******************************************************************************************************************************************************************************/
+/**************************************************************************************************************************************************************/
+```
+
+Let's build the function in one create or replace step:
+
+```sql
 
 create or replace function run_campaign_analysis(target_campaign TEXT)
 returns JSONB
@@ -372,8 +397,13 @@ begin
 
 end;
 $$;
-
+```
+Next time, we can simply use:
+```sql
 /* RUN ALL AS FUNCTION */
 
 select jsonb_pretty(run_campaign_analysis('delivery_club'));
 ```
+And we're done!
+
+This has been a summary of building an analysis pipeline that applies statistical rigour, simply in SQL.
