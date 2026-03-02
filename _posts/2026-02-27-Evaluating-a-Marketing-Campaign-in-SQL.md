@@ -193,9 +193,9 @@ having
 order by
     signup_percentage desc;  
 ```
-Note also, we exclude gender and mailer-type combinations with populations less than 5. 
-A) This is too small a sample to draw meaningful inference from. 
-B) Customers in this population could more easily be identified by their characteristics!  
+Note also, we exclude gender and mailer-type combinations with populations less than 5, since: 
+- A) This is too small a sample to draw meaningful inference from. 
+- B) Customers in this population could more easily be identified by their characteristics!  
 
 We're almost finished. Lets output some sets to allow future checking of any patterns in missing data that could be informative. Hopefully, all missing data in a future campaign will be missing at random, and missingness is not biasing our results. These sets will allow us to check whether this is true.
 
