@@ -5,31 +5,48 @@ image: "/posts/primes_image.jpeg"
 tags: [SQL, Statistical Assumptions, Analysis Piping]
 ---
 
-In this post I'm going to write a SQL program to produce an analytical pipeline that measures the effectiveness of a mail-out marketing campaign. 
-This builds a single function to reproduce the analysis, along with some new data to check statistical assumptions for a future campaign.
+In this post I'm going to write a SQL program to produce an analytical pipeline to measure the effectiveness of a mail-out marketing campaign. 
 
-Let's build this out, all in SQL!
+I'll build a single function to reproduce this for a future campaign, outputting the analysis and new datasets to check statistical assumptions.
+
+Let's build this out, in SQL!
+
+Beginning with the Objectives, which are to: 
+
+- Write an analysis pipeline function in SQL for a grocery store's mail-out marketing campaign
+- Retrieve, for each gender and mailer type in the data: number of customers, signups (successes) and sign-up percentage (mailer success metric)
+- Wrap all steps in a function to run the anaysis from a single function call, outputting a json file containing all required outputs.
+
+We can describe the whole project using a header.
 
 ```sql
 
-/************************************************************************************************************************************************************************************************************/
-/*                                                                                                                                                                                                          */
-/*                                                    MEASURING THE SUCCESS OF MAILER TYPE IN A MAIL-OUT MARKETING CAMPAIGN                          
+/******************************************************************************************************************************************************************/
+
+/*                                                 MEASURING THE SUCCESS OF MAILER TYPE IN A MAIL-OUT MARKETING CAMPAIGN                          
 
 Objective:   
-             This program writes an analysis pipeline function in SQL for a grocery store's mail-out marketing campaign. It retrieves: 
-             for each gender and mailer type: number of customers, signups (successes) and sign-up percentage (mailer success metric). 
-             The function outputs analysis results and interim datasets for statistical quality control to evaluate the representativeness of the sign-up percentage 
-             and to test the key assumptions in creating it. 
-             The campaign used in this example data is named: "delivery_club"
+. Write an analysis pipeline function in SQL for a grocery store's mail-out marketing campaign. Retrieve: 
+for each gender and mailer type: the number of customers, signups (successes) and the sign-up percentage (the mailer success metric). 
+. The function outputs analysis results and interim datasets for statistical quality control to evaluate the representativeness of the sign-up percentage 
+and to test the key assumptions in creating it. 
+. Return results for the campaign used to build the example, the campaign named: "delivery_club"
+```
+We will need to address some statistical assumptions:
 
+```sql
 Assumptions: 
 
-             Missing customer information and campaign information is missing at random (this assumption can be tested in future using our output under 2 possible scenarios).
-             Data linkage does not introduce bias (unlinked customer and campaign ids are collected at linkage to future test this assumption)
-             Missing signup information is missing at random, so signup percentage should include only known signup / known non-signup (a binomial proportion is used to calculate the % - excluding nulls)
-             The true identity of customers, between campaign data id and customer details id, is not known (either id could be the person providing response - giving two scenarios).
+. Missing customer information and campaign information is missing at random (this assumption can be tested in future using our output under 2 possible scenarios: 1) campaign data is the source of true customer ids, or 2) customer details is the source of true customer ids).
+. Data linkage does not introduce bias (unlinked customer and campaign ids are collected with the linkage to test this)
+. Missing signup information is missing at random, so signup percentage should include only known signup / known non-signup 
+(a binomial proportion is used to calculate the % - excluding nulls)
+. The true identity of customers, between campaign data id and customer details id, is not known (either id could be the true response-provider - giving two scenarios).
 
+```
+Now that we're clear on the build and the assumptions made on the way, we can define the steps and the output that we'd expect:
+
+```sql
 Overview of Steps:
 
              1) Link required datasets using best practice data linkage: link customer_details and campaign_data
@@ -37,7 +54,8 @@ Overview of Steps:
              3) Create data for missingness analysis (if assuming source of truth: campaign_data)
              4) Create data for missingness analysis (if assuming source of truth: customer_details)
              5) Combine steps 1-4 in a function to deliver all outputs of this pipeline, with campaign name input as: "delivery_club"
-
+```
+```sql
 Expected Output: 
 
              3 sets output by step 1: linkage data (2 linkage sets are expected to be empty, 1 linkage is expected to contain all linked data, successfully linked on customer id)
@@ -57,9 +75,12 @@ First Lines of Expected Json Output:
                       "signup_percentage": 57.59
                   }, ...etc
                                                                                                                                                                                                             */
-/************************************************************************************************************************************************************************************************************/
+```
+/******************************************************************************************************************************************************************/
  
-
+```
+Let's begin with step one: linking customer details and their campaign data from two sets using best practice data linkage. 
+```sql
    
 /* STEP 1) LINKAGE BEST PRACTICE */
 
