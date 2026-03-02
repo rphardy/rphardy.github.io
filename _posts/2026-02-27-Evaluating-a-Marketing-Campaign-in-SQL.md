@@ -31,10 +31,13 @@ for each gender and mailer type: the number of customers, signups (successes) an
 . The function outputs analysis results and interim datasets for statistical quality control to evaluate the representativeness of the sign-up percentage 
 and to test the key assumptions in creating it. 
 . Return results for the campaign used to build the example, the campaign named: "delivery_club"
+
+*/
 ```
 We will need to address some statistical assumptions:
 
 ```sql
+/*
 Assumptions: 
 
 . Missing customer information and campaign information is missing at random (this assumption can be tested in future using our output under 2 possible scenarios: 1) campaign data is the source of true customer ids, or 2) customer details is the source of true customer ids).
@@ -42,11 +45,12 @@ Assumptions:
 . Missing signup information is missing at random, so signup percentage should include only known signup / known non-signup 
 (a binomial proportion is used to calculate the % - excluding nulls)
 . The true identity of customers, between campaign data id and customer details id, is not known (either id could be the true response-provider - giving two scenarios).
-
+*/
 ```
 Now that we're clear on the build and the assumptions made on the way, we can define the steps and the output that we'd expect:
 
 ```sql
+/*
 Overview of Steps:
 
              1) Link required datasets using best practice data linkage: link customer_details and campaign_data
@@ -54,8 +58,10 @@ Overview of Steps:
              3) Create data for missingness analysis (if assuming source of truth: campaign_data)
              4) Create data for missingness analysis (if assuming source of truth: customer_details)
              5) Combine steps 1-4 in a function to deliver all outputs of this pipeline, with campaign name input as: "delivery_club"
+*/
 ```
 ```sql
+/*
 Expected Output: 
 
              3 sets output by step 1: linkage data (2 linkage sets are expected to be empty, 1 linkage is expected to contain all linked data, successfully linked on customer id)
@@ -74,12 +80,11 @@ First Lines of Expected Json Output:
                       "customer_count": 191,
                       "signup_percentage": 57.59
                   }, ...etc
-                                                                                                                                                                                                            */
+*/
 
 /******************************************************************************************************************************************************************/
- 
 ```
-Let's begin with step one: linking customer details and their campaign data from two sets using best practice data linkage. 
+Let's begin analysing with step one: linking customer details and their campaign data from two sets, using best practice data linkage. 
 ```sql
    
 /* STEP 1) LINKAGE BEST PRACTICE */
@@ -112,18 +117,23 @@ create temp table linkage as (
       cust_join_type,
       customer_id
   );
-
-/* check set 1 of 3 : Should be an empty set for the grocery_db data*/  
+```
+We now have three sets containing all linked and unlinked customer ids from both sources.
+They are:
+```
+/* check set 1 of 3 : This should be an empty set for the grocery_db "delivery_club" data*/  
 select * from linkage where cust_join_type = 'custs_not_in_campaign' order by customer_id; 
 
-/* check set 2 of 3 : should be an empty set for the grocery_db data*/
+/* check set 2 of 3 : This should be an empty set for the grocery_db "delivery_club" data*/
 select * from linkage where cust_join_type = 'in_campaign_not_custs' order by customer_id;
 
-/* check set 3 of 3 : Should contain all data in grocery_db now linked in customer_id */
+/* check set 3 of 3 : The linked analysis set. This contains all data in grocery_db now linked in customer_id for "delivery_club" */
 select * from linkage where cust_join_type = 'custs_in_campaign' order by customer_id;
+```
 
+Using our linked set, it's now straightforward to define our target population and run our analysis. Let's use CTE followed by a single query to run the analysis:
 
-
+```sql
 /* STEP 2) ANALYSIS QUERY ON LINKED DATA : DEFINE TARGET POPULATION AND RUN ANALYSIS */
 
 with target_pop as (
@@ -174,7 +184,11 @@ having
   
 order by
     signup_percentage desc;  
+```
 
+
+
+```sql
 
 
 /* STEP 3) PROVIDE A SET TO ANALYSE M.A.R. ASSUMPTION FOR THE LINKAGE: EXPORT DATA FOR MISSINGNESS ANALYSIS (IF ASSUMING SOURCE OF TRUTH: CAMPAIGN_DATA) */
