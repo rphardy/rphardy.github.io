@@ -44,8 +44,8 @@ We will need to address some statistical assumptions:
 Assumptions: 
 
 . Missing customer information and campaign information is missing at random (this assumption can be tested in future using our output
-  under 2 possible scenarios): 1) campaign data is the source of true customer ids, or
-                               2) customer details is the source of true customer ids).
+  under 2 possible scenarios): 1) campaign data is the source of true customer information, or
+                               2) customer details is the source of true customer information).
 . Data linkage does not introduce bias (unlinked customer and campaign ids are collected with the linkage to test this)
 . Missing signup information is missing at random, so signup percentage should include only known signup / known non-signup 
 (a binomial proportion is used to calculate the % - excluding nulls)
@@ -53,7 +53,8 @@ Assumptions:
   response-provider - giving two scenarios).
 */
 ```
-Now that we're clear on the build and the assumptions made on the way, we can define the steps and the output that we'd expect:
+Now that we're clear on the analysis build and the assumptions made along the way, we can define steps and the output that we'd expect 
+to see:
 
 ```sql
 /*
