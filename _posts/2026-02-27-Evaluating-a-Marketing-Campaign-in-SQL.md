@@ -131,8 +131,8 @@ select * from linkage where cust_join_type = 'in_campaign_not_custs' order by cu
 select * from linkage where cust_join_type = 'custs_in_campaign' order by customer_id;
 ```
 
-Using our linked set, it's now straightforward to define our target population and run our analysis. Let's use CTE followed by a single query to run the analysis:
-Firstly, defining target population as all linked customers:
+Using our linked set, it's now straightforward to define our target population and run our analysis. Let's use CTE followed by a single query to run the analysis.
+First, let's define our target population as all linked customers:
 
 ```sql
 /* STEP 2) ANALYSIS QUERY ON LINKED DATA : DEFINE TARGET POPULATION AND RUN ANALYSIS */
@@ -146,7 +146,7 @@ where
   cust_join_type = 'custs_in_campaign')
 ```
 
-We then create our analysis outcome variable. 
+Then, let's create our analysis outcome variable. 
 Note that we define the signup percentage outcome in best-practice statistical format: as the average of a proportion of a binary outcome Success/Failure, excluding nulls to avoid missing signup information biasing our estimate. We could look deeper into the missingness assumption, but generally, we want this to be the proportion of known successes to known failures to inform our reported percentage. 
 
 ```sql
