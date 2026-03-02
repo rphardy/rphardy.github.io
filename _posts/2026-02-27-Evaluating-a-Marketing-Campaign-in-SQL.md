@@ -147,7 +147,9 @@ where
 ```
 
 Then, let's create our analysis outcome variable. 
-Note that we define the signup percentage outcome in best-practice statistical format: as the average of a proportion of a binary outcome Success/Failure, excluding nulls to avoid missing signup information biasing our estimate. We could look deeper into the missingness assumption, but generally, we want this to be the proportion of known successes to known failures to inform our reported percentage. 
+Note that we define the signup percentage outcome in best-practice statistical format: as the average of a proportion of a binary outcome Success/Failure, excluding nulls. This avoids having missing signup information introducing missingess bias to our estimate. We could dive further into missingness assumptions, depending on our linkage sets and the MLM picture. 
+
+Generally though, we would address this by simply using the proportion of *known* successes to *known* failures to give our reported percentage outcome. We might want to avoid simply calculating an average of the sum of signups, to the sum of customers, but this may be OK to do. In this particular case, doing so would give the same result (since we have no customers with signup status: unknown/missing).
 
 ```sql
 select
