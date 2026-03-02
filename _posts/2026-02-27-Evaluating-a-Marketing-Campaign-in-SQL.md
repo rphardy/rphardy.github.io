@@ -70,10 +70,13 @@ Overview of Steps:
 /*
 Expected Output: 
 
-             3 sets output by step 1: linkage data (2 linkage sets are expected to be empty, 1 linkage is expected to contain all linked data, successfully linked on customer id)
-             1 set output by step 2: analysis data (contains the analysis results for the "delivery_club" mailer campaign: grouped by gender and mailer type)
-             2 sets output by step 3 and 4, 1 set each: missingness data (provided for further testing: MAR assumptions under the 2 potential sources of truth for customer id) 
-             1 json cell containing all the above combined - in human-readable .json format
+              3 sets output by step 1: linkage data (2 linkage sets are expected to be empty, 1 linkage is expected to contain all linked
+              data, successfully linked on customer id)
+              1 set output by step 2: analysis data (contains the analysis results for the "delivery_club" mailer campaign: grouped by
+              gender and mailer type)
+              2 sets output by step 3 and 4, 1 set each: missingness data (provided for further testing: MAR assumptions under the 2
+              potential sources of truth for customer id)
+              1 .json cell containing all the above combined - in human-readable .json format
  
 First Lines of Expected Json Output:
 
@@ -88,9 +91,14 @@ First Lines of Expected Json Output:
                   }, ...etc
 */
 
-/******************************************************************************************************************************************************************/
+/***************************************************************************************************************************************/
 ```
-Let's begin the analysis with step one: linking customer details and customers-in-campaign data. We'll use best-practice data linkage to view a full master linkage map (MLM) of the customer population in both sets. For this data, all customers can be linked successfully to an id in the campaign data, so our unlinked sets should be null, and our MLM is simply all customers in the campaign linked by id key to their details.
+
+Let's begin the analysis with step one: linking customer details and customers-in-campaign data. We'll use best-practice data linkage to 
+view a full master linkage map (MLM) of the customer population in both sets. For this data, all customers can be linked successfully to 
+an id in the campaign data, so our unlinked sets should be null, and our MLM is simply all customers in the campaign linked by id key to 
+their details.
+
 ```sql
    
 /* STEP 1) LINKAGE BEST PRACTICE */
@@ -98,7 +106,8 @@ Let's begin the analysis with step one: linking customer details and customers-i
 drop table if exists linkage;
 create temp table linkage as (
   select
-      coalesce(a.customer_id, b.customer_id) as customer_id, /*colaesce ensures returning the first non-null value. i.e., if first a.customer_id = NULL and first customer_id.b exists - return it.*/
+      coalesce(a.customer_id, b.customer_id) as customer_id, /* colaesce ensures returning the first non-null value. i.e., if first
+                                                                a.customer_id = NULL and first customer_id.b exists - return it. */
       case
           when a.customer_id = b.customer_id then 'custs_in_campaign'
           when a.customer_id is not null and b.customer_id is null then 'custs_not_in_campaign'
@@ -133,11 +142,13 @@ select * from linkage where cust_join_type = 'custs_not_in_campaign' order by cu
 /* check set 2 of 3 : This should be an empty set for the grocery_db "delivery_club" data */
 select * from linkage where cust_join_type = 'in_campaign_not_custs' order by customer_id;
 
-/* check set 3 of 3 : The linked analysis set. This contains all data in grocery_db now linked in customer_id for for the "delivery_club" campaign */
+/* check set 3 of 3 : Linked analysis set. This contains all data in grocery_db now linked on customer_id for the "delivery_club" campaign */
 select * from linkage where cust_join_type = 'custs_in_campaign' order by customer_id;
 ```
 
-Using our linked set, it's now straightforward to define our target population and run our analysis. Let's use CTE followed by a single query to run the analysis.
+Using our linked set, it's now straightforward to define our target population and run our analysis. Let's use CTE followed by a single 
+query to run the analysis.
+
 First, let's define our target population as all linked customers:
 
 ```sql
@@ -153,16 +164,23 @@ where
 ```
 
 Then, let's create our analysis outcome variable. 
-Note that we define the signup percentage outcome in best-practice statistical format: as the average of a proportion of a binary outcome Success/Failure, excluding nulls. This avoids having missing signup information introducing missingess bias to our estimate. We could dive further into missingness assumptions, depending on our linkage sets and the MLM picture. 
 
-Generally though, we would address this by simply using the proportion of *known* successes to *known* failures to give our reported percentage outcome. We might want to avoid simply calculating an average of the sum of signups, to the sum of customers, but this may be OK to do. In this particular case, doing so would give the same result (since we have no customers with signup status: unknown/missing).
+Note that we define the signup percentage outcome in best-practice statistical format: as the average of a proportion of a binary outcome 
+Success/Failure, excluding nulls. This avoids having missing signup information introducing missingess bias to our estimate. We could dive 
+further into missingness assumptions, depending on our linkage sets and the MLM picture. 
+
+Generally though, we would address this by simply using the proportion of *known* successes to *known* failures to give our reported 
+percentage outcome. We might want to avoid simply calculating an average of the sum of signups, to the sum of customers, but this may be 
+OK to do. 
+
+In this particular case, doing so would give the same result (since we have no customers with signup status: unknown/missing).
 
 ```sql
 select
     coalesce(gender, 'Unknown') AS gender,
     coalesce(mailer_type, 'Unknown') AS mailer_type,
     
-    -- Total rows in this group (should equal customer_count since each row is a unique customer, and there are no missing or duplicate customer_ids)
+    -- Total rows in this group (should == customer_count since each row is a unique customer, and there are no missing or duplicate customer_ids)
     count(*) as customer_count,
     
     -- Number of signups (1s only)
@@ -180,7 +198,9 @@ select
         2
     ) as signup_percentage --, 
     
-    -- Should also include: Number of non-missing signup_flag values (in this case, it equals customer count as there are no missing signup flags, so have commented it out)
+    -- Should also include: Number of non-missing signup_flag values
+    -- (in this case, it equals customer count as there are no missing signup
+    -- flags, so have commented it out)
  -- count(signup_flag) as non_missing_signup_count
 
 from 
@@ -194,7 +214,8 @@ group by
   coalesce(mailer_type, 'Unknown')
 
 having 
-  count(*) > 5 /* would not draw meaningful inferences from smaller populations than this, also de-risks customer identification by rare attribute combinations - this step drops all data where gender = 'Unknown' */
+  count(*) > 5 /* would not draw meaningful inferences from smaller populations than this, also de-risks customer identification by rare
+                  attribute combinations - this step drops all data where gender = 'Unknown' */
   
 order by
     signup_percentage desc;  
@@ -203,13 +224,20 @@ Note also, we exclude gender and mailer-type combinations with populations less 
 - A) This is too small a sample to draw meaningful inference from. 
 - B) Customers in this population could more easily be identified by their characteristics!  
 
-We're almost finished. Lets output some sets to allow future checking of any patterns in missing data that could be informative. Hopefully, all missing data in a future campaign will be missing at random, and missingness is not biasing our results. These sets will allow us to check whether this is true.
+We're almost finished. Lets output some sets to allow future checking of any patterns in missing data that could be informative. 
 
-If we weren't sure, we could assume our campaign customer details are true for the majority of customers, over our customer details data.
+Hopefully, all missing data in a future campaign will be missing at random, and missingness is not biasing our results. 
+
+These sets will allow us to check whether this is true.
+
+If we weren't sure, we could assume our campaign customer details are true for the majority of customers, over our customer details data
+and provide a set tagging the missing data from this perspective
 
 ```sql
 
-/* STEP 3) PROVIDE A SET TO ANALYSE M.A.R. ASSUMPTION FOR THE LINKAGE: EXPORT DATA FOR MISSINGNESS ANALYSIS (IF ASSUMING SOURCE OF TRUTH: CAMPAIGN_DATA) */
+/* STEP 3)
+  PROVIDE A SET TO ANALYSE M.A.R. ASSUMPTION FOR THE LINKAGE: EXPORT DATA FOR MISSINGNESS ANALYSIS
+  (IF ASSUMING SOURCE OF TRUTH: CAMPAIGN_DATA) */
 
 select
     a.customer_id as campaign_cust_id,
@@ -233,7 +261,8 @@ where
 Or, we could assume the customer detail is more accurate reflection of the truth for any discrepancies with the details in the campaign.
 
 ```sql
-/* STEP 4) PROVIDE A SET TO ANALYSE M.A.R. ASSUMPTION FOR THE LINKAGE: EXPORT DATA FOR MISSINGNESS ANALYSIS (IF ASSUMING SOURCE OF TRUTH: CUSTOMER_DATA) */
+/* STEP 4) PROVIDE A SET TO ANALYSE M.A.R. ASSUMPTION FOR THE LINKAGE: EXPORT DATA FOR MISSINGNESS ANALYSIS
+          (IF ASSUMING SOURCE OF TRUTH: CUSTOMER_DATA) */
 
 select
     b.customer_id as cust_details_id,
@@ -260,27 +289,32 @@ left join grocery_db.campaign_data a on a.customer_id = b.customer_id
 ```
 
 We've completed our analysis. Let's now wrap this all up in a pipeline to repeat on the next campaign. 
-If our data is in the same clean form, then for the next campaign type, we'll be able to repeat all this in one line of code, using nothing more complex than sql.
+
+If our data is in the same clean form, then for the next campaign type, we'll be able to repeat all this in one line of code, 
+using nothing more complex than SQL.
+
 Let's look at the input and output specs of our intended function:
 
 ```sql
-/************************************************************************************************************************************************************/
-/* STEP 5: WRITE A FUNCTION TO REPRODUCE ALL ANALYSIS FOR THE GIVEN CAMPAIGN AND RETURN ALL OUTPUT IN HUMAN-READABLE JSON FORMAT                                             */
+/***************************************************************************************************************************************/
+/* STEP 5: WRITE A FUNCTION TO REPRODUCE ALL ANALYSIS FOR THE GIVEN CAMPAIGN AND RETURN ALL OUTPUT IN HUMAN-READABLE JSON FORMAT       */
 
-/* INPUTS: grocery_db.campaign_data, grocery_db.customer_details                                                                                            */
+/* INPUTS: grocery_db.campaign_data, grocery_db.customer_details                                                                       */
 
-/* OUTPUTS: JSON file containing data : 1) The analysis results for the campaign: main interest: sign-up percentage breakdowns,                             */
-/*                                      2) analysis dataset used, 3-4) customers in/out of campaign/details sets,                                           */ 
-/*                                      5) missingness from customer details for MAR analysis: source of truth - campaign data ids                          */
-/*                                      6) missingness from campaign data for MAR analysis: source of truth - campaign detail ids                           */
+/* OUTPUTS: JSON file containing data : 1) The analysis results for the campaign: main interest: sign-up percentage breakdowns,        */
+/*                                      2) analysis dataset used, 3-4) customers in/out of campaign/details sets,                      */ 
+/*                                      5) missingness from customer details for MAR analysis: source of truth - campaign data ids     */
+/*                                      6) missingness from campaign data for MAR analysis: source of truth - campaign detail ids      */
 ```
 
 We'll provide the user of our function with some instructions on how to access the pipeline. 
 In this example, SQL was built in SQL Workbench J, and JSON files read into R using the jsonlite package.
 
 ```sql
-/* TO ACCESS OUTPUTS: Save SQL Workbench J Output in cell below: 'jsonb_pretty' in Result 7 result tab as text: "YOUR_FILE.TXT". Then in Rstudio for e.g.: copy and run      */
-/*                    the following to compile and view:                                                                                                                     */
+
+/* TO ACCESS OUTPUTS: Save SQL Workbench J Output in cell below: 'jsonb_pretty' in Result 7 result tab as text: "YOUR_FILE.TXT".
+   Then in R/Rstudio (for e.g.): copy and run      */
+/*                    the following to compile and view:                                                                               */
 /*
 library(jsonlite)
 x <- fromJSON("YOUR_FILE.TXT")
@@ -290,10 +324,12 @@ View(x$custs_not_in_campaign)
 View(x$in_campaign_not_custs)
 View(x$missingness_from_campaign)
 View(x$missingness_from_customer_details)                                                                                                                                     */
-/**************************************************************************************************************************************************************/
+/***************************************************************************************************************************************/
 ```
 
-Let's build the function in one create or replace step:
+Let's build the function in one 'create or replace' step.
+
+The following CTE objects will look very familiar!
 
 ```sql
 
@@ -392,12 +428,18 @@ begin
     )
 
     select jsonb_build_object(
-        'analysis_results', (select jsonb_agg(analysis_results) from analysis_results), /*results: signup percentages by gender and mailer type */
-        'custs_in_campaign', (select jsonb_agg(linkage) from linkage where cust_join_type = 'custs_in_campaign'), /* linked set for analysis : customers with details in the campaign */
-        'custs_not_in_campaign', (select jsonb_agg(linkage) from linkage where cust_join_type = 'custs_not_in_campaign'), /* customer details dropped 1 */
-        'in_campaign_not_custs', (select jsonb_agg(linkage) from linkage where cust_join_type = 'in_campaign_not_custs'), /* customers in campaign dropped 2 */
-        'missingness_from_campaign', (select jsonb_agg(missingness_from_campaign) from missingness_from_campaign), /* customers with details tagged as missing in campaign */
-        'missingness_from_customer_details', (select jsonb_agg(missingness_from_customer_details) from missingness_from_customer_details) /* customer ids in campaign tagged as missing details */
+        'analysis_results', (select jsonb_agg(analysis_results) from analysis_results),
+        /*results: signup percentages by gender and mailer type */
+        'custs_in_campaign', (select jsonb_agg(linkage) from linkage where cust_join_type = 'custs_in_campaign'),
+        /* linked set for analysis : customers with details in the campaign */
+        'custs_not_in_campaign', (select jsonb_agg(linkage) from linkage where cust_join_type = 'custs_not_in_campaign'),
+        /* customer details dropped 1 */
+        'in_campaign_not_custs', (select jsonb_agg(linkage) from linkage where cust_join_type = 'in_campaign_not_custs'),
+        /* customers in campaign dropped 2 */
+        'missingness_from_campaign', (select jsonb_agg(missingness_from_campaign) from missingness_from_campaign),
+        /* customers with details tagged as missing in campaign */
+        'missingness_from_customer_details', (select jsonb_agg(missingness_from_customer_details) from missingness_from_customer_details)
+        /* customer ids in campaign tagged as missing details */
     )
     into result;
 
@@ -406,7 +448,10 @@ begin
 end;
 $$;
 ```
-Next time, we can simply use:
+The function is built.
+
+Next time, to assess a new campaign set up in the same fashion, and to output all diagnostics datasets, we can simply use:
+
 ```sql
 /* RUN ALL AS FUNCTION */
 
