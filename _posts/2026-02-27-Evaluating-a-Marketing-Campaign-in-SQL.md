@@ -18,9 +18,9 @@ Beginning with the Objectives, which are to:
 - Write an analysis pipeline function in SQL for a grocery store's mail-out marketing campaign
 - Retrieve, for each gender and mailer type in the data: number of customers, signups (successes) and sign-up percentage
 (mailer success metric)
-- Wrap all steps in a function to run the anaysis from a single function call, outputting a json file containing all required outputs.
+- Wrap all steps in a function to run the anaysis from a single function call, outputting a JSON file containing all required outputs.
 
-We'll describe the project using a header for future reference:
+we'll describe the project using a header:
 
 ```sql
 
@@ -79,7 +79,7 @@ Expected Output:
               potential sources of truth for customer id)
               1 .json cell containing all the above combined - in human-readable .json format
  
-First Lines of Expected Json Output:
+First Lines of Expected JSON Output:
 
            {
               "analysis_results": [
@@ -150,7 +150,7 @@ select * from linkage where cust_join_type = 'custs_in_campaign' order by custom
 Using our linked set, it's now straightforward to define our target population and run our analysis. Let's use CTE followed by a single 
 query to run the analysis.
 
-First, let's define our target population as all linked customers:
+First, let's define our target population as 'all linked customers':
 
 ```sql
 /* STEP 2) ANALYSIS QUERY ON LINKED DATA : DEFINE TARGET POPULATION AND RUN ANALYSIS */
@@ -171,10 +171,9 @@ Success/Failure, excluding nulls. This avoids having missing signup information 
 further into missingness assumptions, depending on our linkage sets and the MLM picture. 
 
 Generally though, we would address this by simply using the proportion of *known* successes to *known* failures to give our reported 
-percentage outcome. We might want to avoid simply calculating an average of the sum of signups, to the sum of customers, but this may be 
-OK to do. 
+percentage outcome. We might want to avoid simply calculating an average of the sum of signups over the sum of customers, but in some cases this is also fine. 
 
-In this particular case, doing so would give the same result (since we have no customers with signup status: unknown/missing).
+In this particular case, this approach gives the same result (since we have no customers with signup status: unknown/missing).
 
 ```sql
 select
@@ -222,17 +221,18 @@ order by
     signup_percentage desc;  
 ```
 Note also, we exclude gender and mailer-type combinations with populations less than 5, since: 
-- A) This is too small a sample to draw meaningful inference from. 
-- B) Customers in this population could more easily be identified by their characteristics!  
+- a): This is too small a sample to draw meaningful inference from. 
+- b): Customers in this population could more easily be identified by their characteristics!  
 
-We're almost finished. Lets output some sets to allow future checking of any patterns in missing data that could be informative. 
+We're almost finished. Let's output some sets to check any patterns in missing data that could be informative, if needed later. 
 
 Hopefully, all missing data in a future campaign will be missing at random, and missingness is not biasing our results. 
 
 These sets will allow us to check whether this is true.
 
-If we weren't sure, we could assume our campaign customer details are true for the majority of customers, over our customer details data
-and provide a set tagging the missing data from this perspective
+If we weren't sure, we could assume our campaign customer details are true for the majority of customers. 
+Discrepancies with customer details data could be resolved by preferencing the campaign data. 
+To do this, we provide a set tagging the missing data from the perspective of the campaign customer information as the source of truth.
 
 ```sql
 
@@ -259,7 +259,10 @@ left join grocery_db.customer_details b
 where
     a.campaign_name = 'delivery_club';
 ```
-Or, we could assume the customer detail is more accurate reflection of the truth for any discrepancies with the details in the campaign.
+
+Alternatively, we could assume the customer details data are a more accurate reflection of the truth for discrepancies with the details in the campaign.
+
+In practice, domain knowledge would guide this. Here we cover both possibilities.
 
 ```sql
 /* STEP 4) PROVIDE A SET TO ANALYSE M.A.R. ASSUMPTION FOR THE LINKAGE: EXPORT DATA FOR MISSINGNESS ANALYSIS
@@ -292,7 +295,7 @@ left join grocery_db.campaign_data a on a.customer_id = b.customer_id
 We've completed our analysis. Let's now wrap this all up in a pipeline to repeat on the next campaign. 
 
 If our data is in the same clean form, then for the next campaign type, we'll be able to repeat all this in one line of code, 
-using nothing more complex than SQL.
+still in SQL.
 
 Let's look at the input and output specs of our intended function:
 
@@ -330,7 +333,7 @@ View(x$missingness_from_customer_details)                                       
 
 Let's build the function in one 'create or replace' step.
 
-The following CTE objects will look very familiar!
+The following CTE objects should look familiar!
 
 ```sql
 
