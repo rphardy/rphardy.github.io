@@ -5,22 +5,21 @@ image: "/posts/primes_image.jpeg"
 tags: [SQL, Statistical Assumptions, Analysis Piping]
 ---
 
-In this project we are going to write a SQL program to produce an analytical pipeline to describe the effectiveness of a mail-out marketing 
-campaign. 
+In this project we create an analysis pipeline in SQL to describe the effectiveness of a mail-out marketing campaign. 
 
-We'll build a single function to reproduce this for a future campaign, outputting our analysis and some new datasets that we can use to check statistical 
-assumptions.
+We'll build a single function to produce this for a future campaign, outputting our analysis with some new datasets that we can use to 
+check statistical assumptions introduced in analysis.
 
 Let's build this out, in SQL!
 
 Beginning with the Objectives, which are to: 
 
-- Write an analysis pipeline function in SQL for a grocery store's mail-out marketing campaign
+- Write an analysis pipeline in SQL for a grocery store's mail-out marketing campaign
 - Retrieve, for each gender and mailer type in the data: number of customers, signups (successes) and sign-up percentage
 (mailer success metric)
-- Wrap all steps in a function to run the anaysis from a single function call, outputting a JSON file containing all required outputs.
+- Wrap all steps in a function to run the anaysis from a single function call, outputting a JSON file containing all required outputs
 
-we'll describe the project using a header:
+we'll describe the project using a header so that this can be reproduced by anybody with access to just the SQL file:
 
 ```sql
 
