@@ -5,10 +5,10 @@ image: "/posts/primes_image.jpeg"
 tags: [SQL, Statistical Assumptions, Analysis Piping]
 ---
 
-In this post I'm going to write a SQL program to produce an analytical pipeline to measure the effectiveness of a mail-out marketing 
+In this project we are going to write a SQL program to produce an analytical pipeline to describe the effectiveness of a mail-out marketing 
 campaign. 
 
-I'll build a single function to reproduce this for a future campaign, outputting the analysis and new datasets to check statistical 
+We'll build a single function to reproduce this for a future campaign, outputting our analysis and some new datasets that we can use to check statistical 
 assumptions.
 
 Let's build this out, in SQL!
