@@ -322,7 +322,7 @@ In the code, we also make sure to apply *fit_transform* to the training set, but
 For ease, after we have applied One Hot Encoding, we turn our training and test objects back into Pandas Dataframes, with the column names applied.
 
 <br>
-```python
+```py
 
 # list of categorical variables that need encoding
 categorical_vars = ["gender"]
