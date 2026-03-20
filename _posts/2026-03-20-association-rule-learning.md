@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Understanding Alcohol Product Relationships Using Association Rule Learning
+title: Understanding Product Relationships Using Association Rule Learning
 image: "/posts/association-rules-title-img.png"
 tags: [Association Rule Learning, Python]
 ---
@@ -390,6 +390,7 @@ The results of this search, in order of descending Lift are as follows:
 | Australian Rose | Champagne | 0.003925 | 0.378378 | 3.012669 |
 | Australia White | Australian White | 0.062798 | 0.543689 | 3.002074 |
 | Australian Rose | French Red 2 | 0.004766 | 0.459459 | 3.001634 |
+
 <br>
 There appears to be *some* relationship between Australian wines and international wines, but what is also interesting is that Australian wines seem to be more associated with South African and American wines than they are with Australian or New Zealand Wines.
 
