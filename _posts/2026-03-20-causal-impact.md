@@ -338,4 +338,4 @@ It would be interesting to track this uplift over time and see if:
 * It flattens or returns to normal
 * We see any form of uplift pull-forward
 
-It would also be interesting to analyse what it is that is making up this uplift.  Are customers increasing their spend across the same categories - or are they buying into new categories
+It would also be interesting to analyse what it is that is making up this uplift.  Are customers increasing their spend across the same categories - or are they buying into new categories?
