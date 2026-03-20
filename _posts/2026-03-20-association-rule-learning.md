@@ -357,14 +357,14 @@ Another interesting association is between products labelled "small".  At this p
 
 With the data now stored as a DataFrame, we will also go back to the client with a proposal to build a simple "search" tool for Category Managers to use.
 
-An example of how this might work would be to test a hypothesis around New Zealand wines.
+An example of how this might work would be to test a hypothesis around Australian wines.
 
-The code below uses a string function to pull back all rows in the DataFrame where *product1* contains the words "New Zealand"
+The code below uses a string function to pull back all rows in the DataFrame where *product1* contains the words "Australia" or "Australian".
 
 ```python
 
 # search based upon text
-apriori_rules_df[apriori_rules_df["product1"].str.contains("New Zealand")]
+apriori_rules_df[apriori_rules_df["product1"].str.contains("Australia")]
 
 ```
 <br>
@@ -374,26 +374,26 @@ The results of this search, in order of descending Lift are as follows:
 
 | **product1** | **product2** | **support** | **confidence** | **lift** |
 |---|---|---|---|---|
-| New Zealand Red | Malt Whisky | 0.005326605 | 0.271428571 | 5.628986711 |
-| New Zealand Red | Iberia White | 0.007289038 | 0.371428571 | 4.616326531 |
-| New Zealand Red | New Zealand White | 0.012615643 | 0.642857143 | 4.613825812 |
-| New Zealand Red | French White South | 0.004485562 | 0.228571429 | 4.431055901 |
-| New Zealand Red | French White 2 | 0.009531819 | 0.485714286 | 4.256862057 |
-| New Zealand Red | French Red | 0.004205214 | 0.214285714 | 3.879985497 |
-| New Zealand Red | French Red South | 0.006447996 | 0.328571429 | 3.868033946 |
-| New Zealand Red | South America | 0.010933558 | 0.557142857 | 3.799863425 |
-| New Zealand Red | Other Red | 0.004485562 | 0.228571429 | 3.591692889 |
-| New Zealand Red | Iberia | 0.012054948 | 0.614285714 | 3.528433402 |
-| New Zealand Red | Champagne | 0.008690777 | 0.442857143 | 3.526052296 |
-| New Zealand White | South America White | 0.049341183 | 0.354124748 | 3.423205902 |
-| New Zealand Red | French Red 2 | 0.010092515 | 0.514285714 | 3.359811617 |
-| New Zealand Red | South America White | 0.006728343 | 0.342857143 | 3.314285714 |
-| New Zealand Red | Australia White | 0.007289038 | 0.371428571 | 3.215742025 |
-
+| Australian Rose | South African White | 0.003645 | 0.351351 | 4.624614 |
+| Australian Rose | South America White | 0.004766 | 0.459459 | 4.441441 |
+| Australian Rose | American White | 0.004766 | 0.459459 | 4.046647 |
+| Australia White | South African White | 0.034202 | 0.296117 | 3.897593 |
+| Australian Rose | Italian Red | 0.007009 | 0.675676 | 3.881055 |
+| Australian Rose | Australian White | 0.007009 | 0.675676 | 3.730859 |
+| Australia White | South America White | 0.044295 | 0.383495 | 3.707120 |
+| Australian Rose | America White | 0.005046 | 0.486486 | 3.653257 |
+| Australian Rose | American Red | 0.004205 | 0.405405 | 3.597217 |
+| Australia White | South Africa White | 0.038688 | 0.334951 | 3.503730 |
+| Australian Rose | French White 2 | 0.003925 | 0.378378 | 3.316156 |
+| Australian Rose | Australia White | 0.003925 | 0.378378 | 3.275912 |
+| Australian Rose | New Zealand White | 0.004486 | 0.432432 | 3.103595 |
+| Australian Rose | Champagne | 0.003925 | 0.378378 | 3.012669 |
+| Australia White | Australian White | 0.062798 | 0.543689 | 3.002074 |
+| Australian Rose | French Red 2 | 0.004766 | 0.459459 | 3.001634 |
 <br>
-There appears to be *some* relationship between New Zealand wines and other New Zealand wines, but what is also interesting is that New Zealand wines seem to be more associated with French & South American wines than they are with Australian Wines.
+There appears to be *some* relationship between Australian wines and international wines, but what is also interesting is that Australian wines seem to be more associated with South African and American wines than they are with Australian or New Zealand Wines.
 
-New Zealand & Australia are often grouped together, but in terms of wine this wouldn't make sense - perhaps because of the different climates the wines are very different and thus it wouldn't make sense to group wines by geographical proximity, but by preference instead.  This is only a hypothesis for now - we will need to take this back to the client and get their category experts to help us interpret it!
+New Zealand & Australia are often grouped together, but in terms of wine this wouldn't make sense - perhaps because of the different climates, the wines are different and thus it wouldn't make sense to group wines by geographical proximity, but by preference instead.  This is only a hypothesis for now - we will need to take this back to the client and get their category experts to help us interpret it!
 
 ___
 <br>
