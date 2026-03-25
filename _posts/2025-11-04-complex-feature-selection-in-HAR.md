@@ -453,7 +453,7 @@ print(df_selected.head())
 ```
 
 There we have it. A new dataframe containing the features that are most correlated with classe, that were the least correlated with eachother.
-Credit for this approach goes to: Mark A Hall, who's thesis on CFS can be found at: https://ml.cms.waikato.ac.nz/publications/1999/99MH-Thesis.pdf
+Credit for this approach goes to: Mark A Hall, whose thesis on CFS can be found at: https://ml.cms.waikato.ac.nz/publications/1999/99MH-Thesis.pdf
 
 # Model Build  <a name="model-title"></a>
 
