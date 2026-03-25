@@ -19,10 +19,11 @@ Our client, a HAR team, wants to utilise Machine Learning to predict a movement 
 - [03. Vector Calculations](#veccalc-title)
 - [04. Linear SVC + RFECV Feature Selection](#linSVCRFECV-title)
 - [05. CFS Feature Selection](#cfs-title)
-- [06. KNN](#knn-title)
-- [07. Modelling Summary](#modelling-summary)
-- [08. Application](#modelling-application)
-- [09. Growth & Next Steps](#growth-next-steps)
+- [06. Model Build](#model-title)
+- [07. Model Test/Training Accuracy](#accuracy-summary)
+- [08. Model Accuracy on New Data](#modelling-application)
+- [09. Full Set Feature Performance](#fully-featured)
+- [10. Growth & Next Steps](#growth-next-steps)
 
 ___
 
@@ -442,3 +443,14 @@ print("\nFinal dataframe shape:", df_selected.shape)
 print(df_selected.head())
 
 ```
+
+# Model Build  <a name="model-title"></a>
+
+# Model Test / Training Accuracy  <a name="modelling-application"></a>
+
+# Model Accuracy on New Data  <a name="accuracy-summary"></a>
+
+# Full Set Feature Performance  <a name="fully-featured"></a>
+
+# Growth & Next Steps  <a name="growth-next-steps"></a>
+
