@@ -185,8 +185,8 @@ y = pd.read_csv("data/pml_training.csv")["classe"]
 
 # Class
 y.value_counts(normalize = True)
-
 ```
+
 <br>
 From the last step in the above code, we see that **28% of movements were class A and 72% were an error class B-E: 19.3%, 18.4%, 17.4%, 16.4%, respectively**.  This tells us that while the data isn't perfectly balanced at 20:20:20:20:20, it isn't *too* imbalanced either.
 
@@ -206,7 +206,6 @@ There were no missing values in the raw sensor data, as this subset of the study
 We had removed any columns containing missing data on data import, and will create new calculated fields to replace them.
 
 <br>
-
 <br>
 ##### Summarise variables on axes to vectors
 
@@ -269,7 +268,6 @@ for col in candidate_cols:
 
 # drop the grouping variable as it is no longer needed and should not be a feature
 df = df.drop(columns=["num_window"])
-
 ```
 
 <br>
@@ -302,8 +300,6 @@ Let's first attempt the industry standard approach to feature selection in HAR t
 
 <br>
 # LinearSVC + RFECV <a name="linSVCRFECV-title"></a>
-
-![alt text](/img/posts/log-reg-feature-selection-plot.png "Logistic Regression Feature Selection Plot")
 
 We will again utilise the scikit-learn library within Python to select features for our model. The code section below continues from the previous sections:
 
@@ -479,268 +475,3 @@ print("\nFinal dataframe shape:", df_selected.shape)
 print(df_selected.head())
 
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-At a high level, there are two common ways to tackle this.  The first, often just called **Feature Importance** is where we find all nodes in the Decision Trees of the forest where a particular input variable is used to split the data and assess what the gini impurity score (for a Classification problem) was before the split was made, and compare this to the gini impurity score after the split was made.  We can take the *average* of these improvements across all Decision Trees in the Random Forest to get a score that tells us *how much better* we’re making the model by using that input variable.
-
-If we do this for *each* of our input variables, we can compare these scores and understand which is adding the most value to the predictive power of the model!
-
-The other approach, often called **Permutation Importance** cleverly uses some data that has gone *unused* at when random samples are selected for each Decision Tree (this stage is called "bootstrap sampling" or "bootstrapping")
-
-These observations that were not randomly selected for each Decision Tree are known as *Out of Bag* observations and these can be used for testing the accuracy of each particular Decision Tree.
-
-For each Decision Tree, all of the *Out of Bag* observations are gathered and then passed through.  Once all of these observations have been run through the Decision Tree, we obtain a classification accuracy score for these predictions.
-
-In order to understand the *importance*, we *randomise* the values within one of the input variables - a process that essentially destroys any relationship that might exist between that input variable and the output variable - and run that updated data through the Decision Tree again, obtaining a second accuracy score.  The difference between the original accuracy and the new accuracy gives us a view on how important that particular variable is for predicting the output.
-
-*Permutation Importance* is often preferred over *Feature Importance* which can at times inflate the importance of numerical features. Both are useful, and in most cases will give fairly similar results.
-
-Let's put them both in place, and plot the results...
-
-<br>
-![alt text](/img/posts/rf-classification-feature-importance.png "Random Forest Feature Importance Plot")
-<br>
-<br>
-![alt text](/img/posts/rf-classification-permutation-importance.png "Random Forest Permutation Importance Plot")
-
-<br>
-The overall story from both approaches is very similar, in that by far, the most important or impactful input variables are *distance_from_store* and *transaction_count*
-
-Surprisingly, *average_basket_size* was not as important as hypothesised.
-
-There are slight differences in the order or "importance" for the remaining variables but overall they have provided similar findings.
-
-___
-<br>
-
-
-We utilise the scikit-learn library within Python to model our data using KNN. The code sections below are broken up into 5 key sections:
-
-* Data Import
-* Data Preprocessing
-* Model Training
-* Performance Assessment
-* Optimal Value For K
-
-<br>
-### Data Import <a name="knn-import"></a>
-
-Again, since we saved our modelling data as a pickle file, we import it. We ensure we remove the id column, and we also ensure our data is shuffled.
-
-As with the other approaches, we also investigate the class balance of our dependent variable - which is important when assessing classification accuracy.
-
-```python
-
-# import required packages
-import pandas as pd
-import pickle
-import matplotlib.pyplot as plt
-import numpy as np
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.utils import shuffle
-from sklearn.model_selection import train_test_split, cross_val_score, KFold
-from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
-from sklearn.preprocessing import OneHotEncoder, MinMaxScaler
-from sklearn.feature_selection import RFECV
-
-# import modelling data
-data_for_model = pickle.load(open("data/delivery_club_modelling.p", "rb"))
-
-# drop unnecessary columns
-data_for_model.drop("customer_id", axis = 1, inplace = True)
-
-# shuffle data
-data_for_model = shuffle(data_for_model, random_state = 42)
-
-# assess class balance of dependent variable
-data_for_model["signup_flag"].value_counts(normalize = True)
-
-```
-<br>
-From the last step in the above code, we see that **69% of customers did not sign up and 31% did**.  This tells us that while the data isn't perfectly balanced at 50:50, it isn't *too* imbalanced either.  Because of this, and as you will see, we make sure to not rely on classification accuracy alone when assessing results - also analysing Precision, Recall, and F1-Score.
-
-<br>
-### Data Preprocessing <a name="knn-preprocessing"></a>
-
-For KNN, as it is a distance based algorithm, we have certain data preprocessing steps that need to be addressed, including:
-
-* Missing values in the data
-* The effect of outliers
-* Encoding categorical variables to numeric form
-* Feature Scaling
-* Feature Selection
-
-<br>
-##### Missing Values
-
-The number of missing values in the data was extremely low, so instead of applying any imputation (i.e. mean, most common value) we will just remove those rows
-
-```python
-
-# remove rows where values are missing
-data_for_model.isna().sum()
-data_for_model.dropna(how = "any", inplace = True)
-
-```
-
-<br>
-##### Outliers
-
-As KNN is a distance based algorithm, you could argue that if a data point is a long way away, then it will simply never be selected as one of the neighbours - and this is true - but outliers can still cause us problems here.  The main issue we face is when we come to scale our input variables, a very important step for a distance based algorithm.
-
-We don't want any variables to be "bunched up" due to a single outlier value, as this will make it hard to compare their values to the other input variables.  We should always investigate outliers rigorously - in this case we will simply remove them.
-
-In this code section, just like we saw when applying Logistic Regression, we use **.describe()** from Pandas to investigate the spread of values for each of our predictors.  The results of this can be seen in the table below.
-
-<br>
-
-| **metric** | **distance_from_store** | **credit_score** | **total_sales** | **total_items** | **transaction_count** | **product_area_count** | **average_basket_value** |
-|---|---|---|---|---|---|---|---|
-| mean | 2.61 | 0.60 | 968.17 | 143.88 | 22.21 | 4.18 | 38.03  |
-| std | 14.40 | 0.10 | 1073.65 | 125.34 | 11.72 | 0.92 | 24.24  |
-| min | 0.00 | 0.26 | 2.09 | 1.00 | 1.00 | 1.00 | 2.09  |
-| 25% | 0.73 | 0.53 | 383.94 | 77.00 | 16.00 | 4.00 | 21.73  |
-| 50% | 1.64 | 0.59 | 691.64 | 123.00 | 23.00 | 4.00 | 31.07  |
-| 75% | 2.92 | 0.67 | 1121.53 | 170.50 | 28.00 | 5.00 | 46.43  |
-| max | 400.97 | 0.88 | 7372.06 | 910.00 | 75.00 | 5.00 | 141.05  |
-
-<br>
-Again, based on this investigation, we see some *max* column values for several variables to be much higher than the *median* value.
-
-This is for columns *distance_from_store*, *total_sales*, and *total_items*
-
-For example, the median *distance_to_store* is 1.64 miles, but the maximum is over 400 miles!
-
-Because of this, we apply some outlier removal in order to facilitate generalisation across the full dataset.
-
-We do this using the "boxplot approach" where we remove any rows where the values within those columns are outside of the interquartile range multiplied by 2.
-
-<br>
-```python
-
-outlier_investigation = data_for_model.describe()
-outlier_columns = ["distance_from_store", "total_sales", "total_items"]
-
-# boxplot approach
-for column in outlier_columns:
-    
-    lower_quartile = data_for_model[column].quantile(0.25)
-    upper_quartile = data_for_model[column].quantile(0.75)
-    iqr = upper_quartile - lower_quartile
-    iqr_extended = iqr * 2
-    min_border = lower_quartile - iqr_extended
-    max_border = upper_quartile + iqr_extended
-    
-    outliers = data_for_model[(data_for_model[column] < min_border) | (data_for_model[column] > max_border)].index
-    print(f"{len(outliers)} outliers detected in column {column}")
-    
-    data_for_model.drop(outliers, inplace = True)
-
-```
-
-<br>
-##### Split Out Data For Modelling
-
-In exactly the same way we've done for the other three models, in the next code block we do two things, we firstly split our data into an X object which contains only the predictor variables, and a y object that contains only our dependent variable.
-
-Once we have done this, we split our data into training and test sets to ensure we can fairly validate the accuracy of the predictions on data that was not used in training. In this case, we have allocated 80% of the data for training, and the remaining 20% for validation. Again, we make sure to add in the stratify parameter to ensure that both our training and test sets have the same proportion of customers who did, and did not, sign up for the delivery club - meaning we can be more confident in our assessment of predictive performance.
-
-<br>
-```python
-
-# split data into X and y objects for modelling
-X = data_for_model.drop(["signup_flag"], axis = 1)
-y = data_for_model["signup_flag"]
-
-# split out training & test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state = 42, stratify = y)
-
-```
-
-<br>
-##### Categorical Predictor Variables
-
-As we saw when applying the other algorithms, in our dataset, we have one categorical variable *gender* which has values of "M" for Male, "F" for Female, and "U" for Unknown.
-
-The KNN algorithm can't deal with data in this format as it can't assign any numerical meaning to it when looking to assess the relationship between the variable and the dependent variable.
-
-As *gender* doesn't have any explicit *order* to it, in other words, Male isn't higher or lower than Female and vice versa - one appropriate approach is to apply One Hot Encoding to the categorical column.
-
-One Hot Encoding can be thought of as a way to represent categorical variables as binary vectors, in other words, a set of *new* columns for each categorical value with either a 1 or a 0 saying whether that value is true or not for that observation.  These new columns would go into our model as input variables, and the original column is discarded.
-
-We also drop one of the new columns using the parameter *drop = "first"*.  We do this to avoid the *dummy variable trap* where our newly created encoded columns perfectly predict each other - and we run the risk of breaking the assumption that there is no multicollinearity, a requirement or at least an important consideration for some models, Linear Regression being one of them! 
-
-___
-<br>
-# Modelling Summary  <a name="modelling-summary"></a>
-
-The goal for the project was to build a model that would accurately predict the customers that would sign up for the *delivery club*.  This would allow for a much more targeted approach when running the next iteration of the campaign.  A secondary goal was to understand what the drivers for this are, so the client can get closer to the customers that need or want this service, and enhance their messaging.
-
-Based upon these, the chosen the model is the Random Forest as it was a) the most consistently performant on the test set across classification accuracy, precision, recall, and f1-score, and b) the feature importance and permutation importance allows the client an understanding of the key drivers behind *delivery club* signups.
-
-<br>
-**Metric 1: Classification Accuracy**
-
-* KNN = 0.936
-* Random Forest = 0.935
-* Decision Tree = 0.929
-* Logistic Regression = 0.866
-
-<br>
-**Metric 2: Precision**
-
-* KNN = 1.00
-* Random Forest = 0.887
-* Decision Tree = 0.885
-* Logistic Regression = 0.784
-
-<br>
-**Metric 3: Recall**
-
-* Random Forest = 0.904
-* Decision Tree = 0.885
-* KNN = 0.762
-* Logistic Regression = 0.69
-
-<br>
-**Metric 4: F1 Score**
-
-* Random Forest = 0.895
-* Decision Tree = 0.885
-* KNN = 0.865
-* Logistic Regression = 0.734
-
-___
-<br>
-# Application <a name="modelling-application"></a>
-
-We now have a model object, and a the required pre-processing steps to use this model for the next *delivery club* campaign.  When this is ready to launch we can aggregate the necessary customer information and pass it through, obtaining predicted probabilities for each customer signing up.
-
-Based upon this, we can work with the client to discuss where their budget can stretch to, and contact only the customers with a high propensity to join.  This will drastically reduce marketing costs, and result in a much improved ROI.
-
-___
-<br>
-# Growth & Next Steps <a name="growth-next-steps"></a>
-
-While predictive accuracy was relatively high - other modelling approaches could be tested, especially those somewhat similar to Random Forest, for example XGBoost, LightGBM to see if even more accuracy could be gained.
-
-We could even look to tune the hyperparameters of the Random Forest, notably regularisation parameters such as tree depth, as well as potentially training on a higher number of Decision Trees in the Random Forest.
-
-From a data point of view, further variables could be collected, and further feature engineering could be undertaken to ensure that we have as much useful information available for predicting customer loyalty
