@@ -163,7 +163,7 @@ df = df.drop([
     "new_window"
 ], axis=1)
 
-# Remove columns with too many missing values (>=20): this removes all variables in raw data that were wiped - leaving only the complete sensor and time window data.
+# Remove columns with too many missing values (>=20): this removes all variables in raw data that were wiped previously - leaving only the complete sensor and time-window data.
 missing_counts = df.isna().sum()
 df = df.loc[:, missing_counts < 20]
 
