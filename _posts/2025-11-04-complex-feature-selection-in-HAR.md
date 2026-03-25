@@ -57,7 +57,24 @@ For each model, we will import the data in the same way but will need to pre-pro
 
 ### Results <a name="overview-results"></a>
 
-The goal for the project was to 
+The goal for the project was to convert sensor data into a useful predictor that could identify the type of a biceps curl as:
+- Correctly performed (Class A/0)
+- Error 1: Throw the elbows to the front (Class B/1)
+- Error 2: Lift the dumbbell only halfway (Class C/2)
+- Error 3: Lower the dumbbell only halfway (Class D/3)
+- Error 4: Throw the hips to the front (Class E/4)
+
+Our model trained on the data, using 6 features found by CFS calculated from this same data gave an accuracy score of: 99.9 % 
+An almost unbeatable result!
+A model using 17 features found by CFS calculated from the full research data found this subset too simple, at an accuracy score of: 100% 
+
+The only errors are shown in the off-diagonal cells in the confusion matrix:
+
+<img width="445" height="473" alt="image" src="https://github.com/user-attachments/assets/b1524ed0-95ef-4bbe-a159-026ded60eea0" />
+
+A feature selection strategy using industry standard LinearSVC + RFECV selection proved too time-consuming to run, and could not have improved on the modelling results found using the CFS selection strategy. 
+
+On a hold out set, our chosen model gave a score of 20/20 correctly classified lifts, based on single sensor snapshots of bicep curl readings
 
 <br>
 <br>
@@ -532,9 +549,426 @@ Accuracy: 0.99898
 ```
 # Full Set Feature Performance  <a name="fully-featured"></a>
 
+### Recreate features found using CFS in the study <a name="fully-featured-recr"></a>
 ```python
-#
+
+import pandas as pd
+import numpy as np
+
+# import data
+df = pd.read_csv("data/pml_training.csv")
+
+# drop unnecessary columns
+
+df.drop(["Unnamed: 0",
+         "user_name",
+         "raw_timestamp_part_1", 
+         "raw_timestamp_part_2",
+         "new_window"], axis = 1, inplace = True)
+
+# Missingness is by column: calculated values are deleted from this set. 
+# Count up missing values in each column
+
+missing_counts = {col: df[col].isna().sum() for col in df.columns}
+
+# In the data, we have complete data for a subset of columns (55), and missing data <= 20 obs for the remainder (100).
+
+# View the dictionary
+missing_counts
+
+# Drop all columns with missing values above 20
+features_with_miss = [col for col, count in missing_counts.items() if count >= 20]
+
+df = df.drop(features_with_miss, axis=1)
+
+#### View distribution of observations by num_window
+counts = df.groupby('num_window').size()
+
+#### 17 Features were selected by the paper using the method: ####
+## A good feature subset contains features that are highly correlated with the class but uncorrelated with each other. ##
+  
+feat_seln_method_at = "https://ml.cms.waikato.ac.nz/publications/1999/99MH-Thesis.pdf"
+
+# Let's recreate these measures on our training data using standard HAR (Human Activity Recognition) practice #
+
+features = []
+mags = []
+
+#                               In BELT
+
+# A) the mean and variance of the roll (all vars by sliding window-frame: num_window)
+
+df['roll_belt_mean'] = (
+    df.groupby('num_window')['roll_belt']
+      .transform('mean')
+)
+
+df['roll_belt_var'] = (
+    df.groupby('num_window')['roll_belt']
+      .transform('var')   # sample variance (ddof=1)
+)
+
+features.extend([
+    'roll_belt_mean',
+    'roll_belt_var'
+])
+
+
+# B) maximum, range and variance of the belt accelerometer vector: 
+
+# 1. Compute the vector magnitude for each row
+df['accel_belt_mag'] = np.sqrt(
+    df['accel_belt_x']**2 +
+    df['accel_belt_y']**2 +
+    df['accel_belt_z']**2
+)
+
+# 2. Compute window-level features and broadcast to each row
+df['accel_belt_mag_max'] = (
+    df.groupby('num_window')['accel_belt_mag']
+      .transform('max')
+)
+
+df['accel_belt_mag_range'] = (
+    df.groupby('num_window')['accel_belt_mag']
+      .transform(lambda s: s.max() - s.min())
+)
+
+df['accel_belt_mag_var'] = (
+    df.groupby('num_window')['accel_belt_mag']
+      .transform('var')   # sample variance (ddof=1)
+)
+
+mags.extend(['accel_belt_mag'])
+
+features.extend([
+    'accel_belt_mag_max',
+    'accel_belt_mag_range',
+    'accel_belt_mag_var'
+])
+
+
+# C) variance of the gyro: 
+
+# 1. Compute the vector magnitude for each row
+df['gyros_belt_mag'] = np.sqrt(
+    df['gyros_belt_x']**2 +
+    df['gyros_belt_y']**2 +
+    df['gyros_belt_z']**2
+)
+
+df['gyros_belt_mag_var'] = (
+    df.groupby('num_window')['gyros_belt_mag']
+      .transform('var')   # sample variance (ddof=1)
+)
+
+mags.extend(['gyros_belt_mag'])
+
+features.extend([
+    'gyros_belt_mag_var'
+])
+
+# D) variance of the magnetometer.
+
+# 1. Compute magnetometer vector magnitude
+df['magnet_belt_mag'] = np.sqrt(
+    df['magnet_belt_x']**2 +
+    df['magnet_belt_y']**2 +
+    df['magnet_belt_z']**2
+)
+
+# 2. Compute window-level variance and broadcast to each row
+df['magnet_belt_mag_var'] = (
+    df.groupby('num_window')['magnet_belt_mag']
+      .transform('var')   # sample variance (ddof=1)
+)
+
+mags.extend(['magnet_belt_mag'])
+
+features.extend([
+    'magnet_belt_mag_var'
+])
+
+#                                   In ARM:
+    
+# A) variance of the accelerometer vector
+# B) maximum and minimum of the magnetometer
+
+# A.
+df['accel_arm_mag'] = np.sqrt(
+    df['accel_arm_x']**2 +
+    df['accel_arm_y']**2 +
+    df['accel_arm_z']**2
+)
+
+df['accel_arm_mag_var'] = (
+    df.groupby('num_window')['accel_arm_mag']
+      .transform('var')   # sample variance (ddof=1)
+)
+
+mags.extend(['accel_arm_mag'])
+
+features.extend([
+    'accel_arm_mag_var'
+])
+
+# B.
+df['magnet_arm_mag'] = np.sqrt(
+    df['magnet_arm_x']**2 +
+    df['magnet_arm_y']**2 +
+    df['magnet_arm_z']**2
+)
+
+# 2. Compute window-level features and broadcast to each row
+
+# maximum:
+df['magnet_arm_mag_max'] = (
+    df.groupby('num_window')['magnet_arm_mag']
+      .transform('max')
+)
+
+# minimum:
+df['magnet_arm_mag_min'] = (
+    df.groupby('num_window')['magnet_arm_mag']
+      .transform('min')
+)
+
+mags.extend(['magnet_arm_mag'])
+
+features.extend([
+    'magnet_arm_mag_max',
+    'magnet_arm_mag_min'
+])
+
+#                                   In DUMBBELL:
+    
+# a) maximum of the acceleration
+# b) variance of the gyro and 
+# c) maximum and minimum of the magnetometer
+
+#A
+df['accel_dumbbell_mag'] = np.sqrt(
+    df['accel_dumbbell_x']**2 +
+    df['accel_dumbbell_y']**2 +
+    df['accel_dumbbell_z']**2
+)
+
+df['accel_dumbbell_mag_max'] = (
+    df.groupby('num_window')['accel_dumbbell_mag']
+      .transform('max')
+)
+
+mags.extend(['accel_dumbbell_mag'])
+
+features.extend([
+    'accel_dumbbell_mag_max'
+])
+
+#B
+
+df['gyros_dumbbell_mag'] = np.sqrt(
+    df['gyros_dumbbell_x']**2 +
+    df['gyros_dumbbell_y']**2 +
+    df['gyros_dumbbell_z']**2
+)
+
+df['gyros_dumbbell_mag_var'] = (
+    df.groupby('num_window')['gyros_dumbbell_mag']
+      .transform('var')   # sample variance (ddof=1)
+)
+
+mags.extend(['gyros_dumbbell_mag'])
+
+features.extend([
+    'gyros_dumbbell_mag_var'
+])
+
+
+#C
+df['magnet_dumbbell_mag'] = np.sqrt(
+    df['magnet_dumbbell_x']**2 +
+    df['magnet_dumbbell_y']**2 +
+    df['magnet_dumbbell_z']**2
+)
+
+# maximum:
+df['magnet_dumbbell_mag_max'] = (
+    df.groupby('num_window')['magnet_dumbbell_mag']
+      .transform('max')
+)
+
+# minimum:
+df['magnet_dumbbell_mag_min'] = (
+    df.groupby('num_window')['magnet_dumbbell_mag']
+      .transform('min')
+)
+
+mags.extend(['magnet_dumbbell_mag'])
+
+features.extend([
+    'magnet_dumbbell_mag_max',
+    'magnet_dumbbell_mag_min'
+])
+
+
+#                                   In GLOVE (Fore-arm):
+
+# a) sum of the pitch
+df['pitch_forearm_sum'] = (
+    df.groupby('num_window')['pitch_forearm']
+        .transform('sum')
+)
+
+features.extend([
+    'pitch_forearm_sum'
+])
+
+# b) the maximum and minimum of the gyro
+df['gyros_forearm_mag'] = np.sqrt(
+    df['gyros_forearm_x']**2 +
+    df['gyros_forearm_y']**2 +
+    df['gyros_forearm_z']**2
+)
+# maximum:
+df['gyros_forearm_mag_max'] = (
+    df.groupby('num_window')['gyros_forearm_mag']
+      .transform('max')
+)
+
+# minimum:
+df['gyros_forearm_mag_min'] = (
+    df.groupby('num_window')['gyros_forearm_mag']
+      .transform('min')
+)
+
+mags.extend(['gyros_forearm_mag'])
+
+features.extend([
+    'gyros_forearm_mag_max',
+    'gyros_forearm_mag_min'
+])
+
+print(features)
+print(mags)
+print(df.columns[55:81])
+print(df.drop(mags, axis=1).columns)
+
+df.drop(mags, axis=1, inplace = True)
 ```
+
+### Recreate Paper Model <a name="fully-featured-model"></a>
+
+```python
+# Recreate Paper Model - a version of it using RF and many more decision trees
+
+# Import packages
+
+import pandas as pd
+import pickle
+import matplotlib.pyplot as plt
+import numpy as np
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.utils import shuffle
+from sklearn.model_selection import train_test_split, cross_val_score, KFold
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.inspection import permutation_importance
+
+###############################################################
+# Import sample data
+###############################################################
+
+# Run 101_Recreate_Paper_Features.py
+
+###############################################################
+# prepare dataset for ML
+###############################################################
+
+# Shuffle and trim data
+
+df = shuffle(df, random_state = 42)
+df = df[features+["classe"]]
+
+# Class Balance
+
+df.["classe"]value_counts(normalize = True) # good class balance
+
+###############################################################
+# Split Input Variables and Output Variable
+###############################################################
+
+X = df.drop(["classe"], axis = 1)
+y = df["classe"]
+
+###############################################################
+# Split Out Training and Test Sets
+###############################################################
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state = 42, stratify = y)
+
+###############################################################
+# Model Training
+###############################################################
+
+clf = RandomForestClassifier(random_state = 42, n_estimators = 500, max_features = 17)
+clf.fit(X_train, y_train)
+
+# Assess model accuracy
+
+y_pred_class = clf.predict(X_test) #default 50%. n of trees, that came to conclusion data point was in the positive/negative class
+y_pred_prob = clf.predict_proba(X_test)[:,1]
+
+# Confusion matrix
+
+conf_matrix = confusion_matrix(y_test, y_pred_class)
+
+plt.style.use('bmh')
+plt.matshow(conf_matrix, cmap = "coolwarm")
+plt.gca().xaxis.tick_bottom()
+plt.title("Confusion Matrix")
+plt.ylabel("Actual Class")
+plt.xlabel("Predicted Class")
+for (i,j), corr_value in np.ndenumerate(conf_matrix):
+    plt.text(j, i, corr_value, ha = "center", va = "center", fontsize = 20)
+plt.show()
+
+accuracy_score(y_test, y_pred_class)
+
+# Feature Importance - based on mean decrease in the gini impurity score
+
+feature_importance = pd.DataFrame(clf.feature_importances_)
+feature_names = pd.DataFrame(X.columns)
+feature_importance_summary = pd.concat([feature_names, feature_importance], axis = 1)
+feature_importance_summary.columns = ["input_variable","feature_importance"]
+feature_importance_summary.sort_values(by = "feature_importance", inplace = True)
+
+plt.barh(feature_importance_summary["input_variable"],feature_importance_summary["feature_importance"])
+plt.title("Feature Importance of Random Forest")
+plt.xlabel("Feature Importance")
+plt.tight_layout()
+plt.show()
+
+# Permutation Importance (generally preferred) - the decrease seen when randomising each specific input variable
+
+result = permutation_importance(clf, X_test, y_test, n_repeats = 10, random_state = 42)
+
+permutation_importance = pd.DataFrame(result["importances_mean"])
+feature_names = pd.DataFrame(X.columns)
+permutation_importance_summary = pd.concat([feature_names, permutation_importance], axis = 1)
+permutation_importance_summary.columns = ["input_variable","permutation_importance"]
+permutation_importance_summary.sort_values(by = "permutation_importance", inplace = True)
+
+plt.barh(permutation_importance_summary["input_variable"],permutation_importance_summary["permutation_importance"])
+plt.title("Permutation Importance of Random Forest")
+plt.xlabel("Permutation Importance")
+plt.tight_layout()
+plt.show()
+```
+<img width="439" height="474" alt="image" src="https://github.com/user-attachments/assets/02e87961-9581-4e16-973f-d69df47d0f6e" />
+<img width="720" height="472" alt="image" src="https://github.com/user-attachments/assets/5a427523-b5ab-4b22-bf8e-af28dabc9632" />
+<img width="733" height="463" alt="image" src="https://github.com/user-attachments/assets/48ee91d7-fb76-4516-b136-a953912358ad" />
+
 # Growth & Next Steps  <a name="growth-next-steps"></a>
 
 
