@@ -52,6 +52,7 @@ Of the incorrect lifts, it was split by error type B-E: 19.3% : 18.4% : 17.4% : 
 As we are predicting a class in a HAR context, we tested Random Forest modelling approaches.
 
 For each model, we will import the data in the same way but will need to pre-process the data based upon different feature sets to include in our Random Forest algorithm.  We will train & test each model, refining our approach to feature setting, to provide optimal performance, and then measure this predictive performance based on accuracy score and performance on a new set of 20 observations from 20 new lifters.
+
 <br>
 <br>
 
@@ -93,7 +94,8 @@ We will be predicting the categorical *classe* metric from the subset *training*
 
 The key variables hypothesised to predict this will come from the sensor data contained in this set.
 
-We calculate vector statistics from the repeat sensor collections in windows of different length across (0.5 to 2.5 seconds) during the lift. For this training data, a lifter had repeated 10 repetitions of a bicep curl exactly according to instructions specified by a weight lfiting as correct technique (Class A), or by their instruction to perform one of the following errors:
+We calculate vector statistics from the repeat sensor collections in windows of different length (0.5 to 2.5 seconds) during the lift. For this training data, a lifter had completed 10 repetitions of a bicep curl exactly according to instructions specified by a weight lifting coach. 
+The coach instructed to lift using a soecified technique (Class A), or to perform one of the following errors:
 Error 1: Throw the elbows to the front (Class B)
 Error 2: Lift the dumbbell only halfway (Class C)
 Error 3: Lower the dumbbell only halfway (Class D)
@@ -109,7 +111,7 @@ After some data pre-processing in Python, we have a dataset for modelling that c
 | classe | Dependent | A categorical variable showing the lift class |
 | num_window | Independent | The time window in which the sensor data was collected - not used for modelling  |
 | roll/pitch/yaw_belt/arm/forearm/dumbbell | Independent | The roll,pitch or yaw reading for a sensor collection in the time window at either belt/arm/forearm/dumbbell sensors |
-| total_accel_belt | Independent | The total accelerometer data in 3 dimensions x,y,z at the belt sensor |
+| total_accel_belt/arm/dumbbell/forearm | Independent | The total accelerometer data in 3 dimensions x,y,z at the belt, arm, dumbbell or forearm sensor |
 | gyros/accel/magnet_belt_x/y/z | Independent | The gyrometer, accelerometer and magnetometer belt sensor readings in x/y/z dimensions: forwards, sideways, upwards  |
 | gyros/accel/magnet_arm_x/y/z | Independent | The gyrometer, accelerometer and magnetometer armband sensor readings in x/y/z dimensions: forwards, sideways, upwards |
 | gyros/accel/magnet_dumbbell_x/y/z | Independent | The gyrometer, accelerometer and magnetometer dumbbell sensor readings in x/y/z dimensions: forwards, sideways, upwards |
@@ -122,7 +124,7 @@ We will build a model that looks to accurately classify *classe*, based upon the
 
 If that can be achieved, we can use this model to predict movement type for future movements (future weighted bicep curl movements).  This information can be used to provide feedback to a lifter, guiding correct movement technique.
 
-As we are predicting a categorical output using granular data from many inputs in a HAR environment, we use a two step approach: 1) clacluate vector statistics from the raw sensor data and 2) pass these onto one of two feature selection approaches:
+As we are predicting a categorical output using granular data from many inputs in a HAR environment, we use a two step approach: 1) calculate vector statistics from the raw sensor data and 2) pass these onto one of two feature selection approaches:
 
 * LinearSVC + RFECV - an industry standard approach to HAR using sensor data.
 * Correlation-Based Feature Selection (CFS) + RF - an elegant selector that trims highly correlated features.
