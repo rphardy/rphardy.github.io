@@ -130,6 +130,8 @@ As we are predicting a categorical output using granular data from many inputs i
 * LinearSVC + RFECV - an industry standard approach to HAR using sensor data.
 * Correlation-Based Feature Selection (CFS) + RF - an elegant selector that trims highly correlated features.
 
+From there, we include the identified features in a Random Forest model consisting of 500 Decision trees, to make our movement type class predictions.
+
 <br>
 # Vector Calculations <a name="veccalc-title"></a>
 
@@ -203,7 +205,7 @@ Once we have done this, we can perform feature selection using these summaries a
 
 Vector magnitudes are calculated from 3 dimensions (front, sideways, upwards) as:
 
-\mathrm{magnitude}=\sqrt{x^2+y^2+z^2}
+$$\mathrm{magnitude}=\sqrt{x^2+y^2+z^2}$$
 
 <br>
 ```python
@@ -278,7 +280,7 @@ One downside of this approach is the long run-times that LinearSVC can take, as 
 We compare this to an elegant mathematical approach to feature selection called Correlation-Based feature Selection (CFS), which is also used in HAR.
 CFS chooses the smallest set of features that are highly correlated with the class while being minimally correlated with each other. The core of this approach uses the merit function:
 
-\mathrm{Merit_{\mathnormal{S}}}=\frac{k\cdot \bar {r}_{cf}}{\sqrt{k+k(k-1)\bar {r}_{ff}}}
+$$\mathrm{Merit_{\mathnormal{S}}}=\frac{k\cdot \bar {r}_{cf}}{\sqrt{k+k(k-1)\bar {r}_{ff}}}$$
 
 Multicollinearity occurs when two or more input variables are *highly* correlated with each other, it is a scenario we attempt to avoid as in short, while it won't necessarily affect the predictive accuracy of our model, it can make it difficult to trust the statistics that describe how well the model is performing, and how much effect each input variable is truly having. CFS does a good job of reducing multicollinearity since it assigns more merit (defined above) to features that are not correlated.
 
