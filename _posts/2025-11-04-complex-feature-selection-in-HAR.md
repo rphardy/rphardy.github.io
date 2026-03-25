@@ -37,9 +37,10 @@ For this, they collected data on six subjects using sensors strapped to their be
 
 For the next subject they would like to classify the movement they are doing, and provide this as feedback.
 
-Based upon the data they've collected, we will look to understand the *prediction accuracy* of a model built to classify the lift, and test it on new lifters. This would allow the HAR team to provide a new lifter with technique cues to improve their movement on the exercise.
+Based upon the data they've collected, we will look to understand the *prediction accuracy* of a model built to classify the lift, and test it on new lifters. This would allow the HAR team to provide a new lifter with technique cues to improve their movement during exercise. The HAR team has access to a much larger set of measures and can train their own models on this, whereas we only have access to the small subset of training data that they've sent to us to use in our Machine Learning builds.
 
 Let's use Machine Learning to take on this task!
+
 <br>
 <br>
 ### Actions <a name="overview-actions"></a>
@@ -49,9 +50,9 @@ We firstly needed to compile the necessary data from each of the 6 subjects, gat
 Within our dataset from the 6 subjects, we found that 28.4% of sensor data across all collection windows indicated a correct lift (class A), and 71.6% came from incorrect lifts. 
 Of the incorrect lifts, it was split by error type B-E: 19.3% : 18.4% : 17.4% : 16.4%. This tells us that while the data isn't perfectly balanced at 20:20:20:20:20 across lift class, it isn't *too* imbalanced either.
 
-As we are predicting a class in a HAR context, we tested Random Forest modelling approaches.
+As we are predicting a class in a HAR context, with a dense feature space, we test Random Forest modelling approaches as industry standard. 
 
-For each model, we will import the data in the same way but will need to pre-process the data based upon different feature sets to include in our Random Forest algorithm.  We will train & test each model, refining our approach to feature setting, to provide optimal performance, and then measure this predictive performance based on accuracy score and performance on a new set of 20 observations from 20 new lifters.
+For each model, we will import the data in the same way, but will need to pre-process it based upon different strategies to give a feature set to include in our Random Forest algorithm.  We will train & test a model using each feature selection approach, to provide optimal performance, and then measure this predictive performance based on accuracy score and on its ability to successfully classify a new set of 20 observations from 20 new lifters.
 
 <br>
 <br>
@@ -65,15 +66,14 @@ The goal for the project was to convert sensor data into a useful predictor that
 - Error 3: Lower the dumbbell only halfway (Class D/3)
 - Error 4: Throw the hips to the front (Class E/4)
 
-Our model trained on the data, using 6 features found by CFS calculated from this same data gave an accuracy score of: 99.9 % 
-An almost unbeatable result!
-A model using 17 features found by CFS calculated from the full research data found this subset too simple, at an accuracy score of: 100% 
+Our model trained on the data, using 6 features found by CFS calculated from this same data gave an accuracy score of: 99.9 %. An *almost* unbeatable result!
+A model using 17 features found by CFS calculated from the full research data found this subset too simple for it, at an accuracy score of 100%. 
 
-The only errors are shown in the off-diagonal cells in the confusion matrix:
+The only errors we made training on this set alone compared to the study's more powered model based on a fuller dataset are shown in the off-diagonal cells in the confusion matrix below: a difference of just 4 mis-classifications, but made using 11 fewer features in our model!
 
 <img width="445" height="473" alt="image" src="https://github.com/user-attachments/assets/b1524ed0-95ef-4bbe-a159-026ded60eea0" />
 
-A feature selection strategy using industry standard LinearSVC + RFECV selection proved too time-consuming to run, and could not have improved on the modelling results found using the CFS selection strategy. 
+A feature selection strategy using industry standard LinearSVC + RFECV selection proved too time-consuming to run, and could not have improved on the modelling results found using the CFS selection strategy as shown. 
 
 On a hold out set, our chosen model gave a score of 20/20 correctly classified lifts, based on single sensor snapshots of bicep curl readings
 
@@ -83,7 +83,8 @@ On a hold out set, our chosen model gave a score of 20/20 correctly classified l
 
 Since predictive accuracy was very high - our feature selection and modelling approach could be tested on new subjects doing different types of lifts, to see if this accuracy translates to different movements.
 
-From a data point of view, further variables could be collected, and further feature engineering could be undertaken for more complex movements, to similar to the complete data in the original study.
+From a data point of view, further feature engineering could be undertaken for more complex movements, with features likely to be similar to the ones included in the complete set from the original study.
+
 <br>
 <br>
 ___
@@ -279,7 +280,7 @@ CFS chooses the smallest set of features that are highly correlated with the cla
 
 \mathrm{Merit_{\mathnormal{S}}}=\frac{k\cdot \bar {r}_{cf}}{\sqrt{k+k(k-1)\bar {r}_{ff}}}
 
-Multicollinearity occurs when two or more input variables are *highly* correlated with each other, it is a scenario we attempt to avoid as in short, while it won't necessarily affect the predictive accuracy of our model, it can make it difficult to trust the statistics around how well the model is performing, and how much each input variable is truly having. CFS does a good job of reducing multicollinearity since it assigns more merit (defined above) to features that are not correlated.
+Multicollinearity occurs when two or more input variables are *highly* correlated with each other, it is a scenario we attempt to avoid as in short, while it won't necessarily affect the predictive accuracy of our model, it can make it difficult to trust the statistics that describe how well the model is performing, and how much effect each input variable is truly having. CFS does a good job of reducing multicollinearity since it assigns more merit (defined above) to features that are not correlated.
 
 We'll code this approach in Python and see how it works out in our model predictions!
 
@@ -294,7 +295,7 @@ The code section below continues with our prepared dataframe containing the suit
 <br>
 ### Feature Selection <a name="linSVCRFECV-select"></a>
 
-Continuing with our df object from adding our vector features, we:
+Continuing with our df object containing our new vector features, we:
 - import the packages we'll need: LinearSVC, RFECV and StratifiedKFold
 - instantiate our Linear SVC estimator
 - run cross-validated random forest estimation
@@ -323,11 +324,17 @@ rfecv.fit(X, y)
 
 ```
 
-Well, this is still running after an hour...
-While this will eventually complete, and deliver a nice set of features to use in modelling our prediction, it can take minutes to over an hour! 
+Well, this is still running, after an hour...
+
+While this will eventually converge, and deliver a nice set of features to use in modelling our prediction, it can take minutes to over an hour! This is enough of a reason to try something else, so let's end this line of investigation now.
 
 We'd need something faster if we were investigating a range of new exercises.
-Let's see how we go using a simpler approach to feature selection.
+
+Let's see how we go in using a simpler approach to feature selection.
+
+We'll create some functions using NumPy in Python to define what we want our CFS to do: define merit mathematically, and add features through this algorithm as long as they continue to improve merit. 
+
+Then we'll standardise the scaling of our selected features, and output a new dataframe for modelling containing only the scaled features found by our CFS function.  
 
 # CFS Feature Selection <a name="cfs-title"></a>
 
@@ -445,18 +452,23 @@ print(df_selected.head())
 
 ```
 
+There we have it. A new dataframe containing the features that are most correlated with classe, that were the least correlated with eachother.
+Credit for this approach goes to: Mark A Hall, who's thesis on CFS can be found at: https://ml.cms.waikato.ac.nz/publications/1999/99MH-Thesis.pdf
+
 # Model Build  <a name="model-title"></a>
+
+Let's now build our Random Forest model:
 
 ```python
 ###############################################################
 # prepare dataset for ML
 ###############################################################
 
-# Shuffle and trim data
+# Re-Shuffle our data
 
 df = shuffle(df_selected, random_state = 42)
 
-# Class Balance
+# Check Class Balance
 
 df["classe"].value_counts(normalize = True) # good class balance
 
@@ -468,7 +480,8 @@ X = df.drop(["classe"], axis = 1)
 y = df["classe"]
 
 ###############################################################
-# Split Out Training and Test Sets
+# Split Out Training and Test Sets -
+# ensuring stratification evenly to classes
 ###############################################################
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state = 42, stratify = y)
@@ -482,7 +495,8 @@ clf.fit(X_train, y_train)
 
 ```
 
-
+We've fit a Random Forest model containing 500 decision trees, using just 6 features calculated and selected using all of the raw sensor data.
+Let's next see its Accuracy classifying movement on the 20% test set.
 
 # Model Test / Training Accuracy  <a name="modelling-application"></a>
 
@@ -538,18 +552,25 @@ plt.xlabel("Permutation Importance")
 plt.tight_layout()
 plt.show()
 ```
-<img width="445" height="473" alt="image" src="https://github.com/user-attachments/assets/b1524ed0-95ef-4bbe-a159-026ded60eea0" />
-<img width="703" height="464" alt="image" src="https://github.com/user-attachments/assets/64ee9cb3-6e2e-4506-9dae-1833d3de956c" />
-<img width="713" height="465" alt="image" src="https://github.com/user-attachments/assets/f443c13e-683d-4645-930e-4ef30426de3b" />
+<img width="445" height="473" alt="image" src="https://github.com/user-attachments/assets/b1524ed0-95ef-4bbe-a159-026ded60eea0" />.
 
-Accuracy: 0.99898
+<img width="703" height="464" alt="image" src="https://github.com/user-attachments/assets/64ee9cb3-6e2e-4506-9dae-1833d3de956c" />.
+
+<img width="713" height="465" alt="image" src="https://github.com/user-attachments/assets/f443c13e-683d-4645-930e-4ef30426de3b" />.
+
+Accuracy: 0.99898 (!)
 
 # Model Accuracy on New Data  <a name="accuracy-summary"></a>
 
 ```python
 #
 ```
+
 # Full Set Feature Performance  <a name="fully-featured"></a>
+
+Let's assess how a model containing the full set of features identified using a much larger dataset (also using CFS) would go on the training subset that we received from the HAR team.
+
+First, let's re-create the 17 features that were reported to be used in the HAR team's RF modelling.
 
 ### Recreate features found using CFS in the study <a name="fully-featured-recr"></a>
 ```python
@@ -857,11 +878,13 @@ print(df.drop(mags, axis=1).columns)
 
 df.drop(mags, axis=1, inplace = True)
 ```
+Next, let's use these in a similar Random Forest model to the one we ran on our own data, and run it on this data.
+Let's keep the number of decision trees comparable to our own model (500)
 
 ### Recreate Paper Model <a name="fully-featured-model"></a>
 
 ```python
-# Recreate Paper Model - a version of it using RF and many more decision trees
+# Recreate Paper's Model - A version of it using RF and many more decision trees
 
 # Import packages
 
@@ -967,9 +990,15 @@ plt.xlabel("Permutation Importance")
 plt.tight_layout()
 plt.show()
 ```
-<img width="439" height="474" alt="image" src="https://github.com/user-attachments/assets/02e87961-9581-4e16-973f-d69df47d0f6e" />
-<img width="720" height="472" alt="image" src="https://github.com/user-attachments/assets/5a427523-b5ab-4b22-bf8e-af28dabc9632" />
-<img width="733" height="463" alt="image" src="https://github.com/user-attachments/assets/48ee91d7-fb76-4516-b136-a953912358ad" />
+<img width="439" height="474" alt="image" src="https://github.com/user-attachments/assets/02e87961-9581-4e16-973f-d69df47d0f6e" />.
+
+<img width="720" height="472" alt="image" src="https://github.com/user-attachments/assets/5a427523-b5ab-4b22-bf8e-af28dabc9632" />.
+
+<img width="733" height="463" alt="image" src="https://github.com/user-attachments/assets/48ee91d7-fb76-4516-b136-a953912358ad" />.
+
+Accuracy: 1.0
+
+This training set has not challenged the model containing 17 features. With 500 Decision Trees, it achieved perfect prediction!
 
 # Growth & Next Steps  <a name="growth-next-steps"></a>
 
