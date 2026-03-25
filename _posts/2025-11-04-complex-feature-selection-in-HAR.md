@@ -56,41 +56,8 @@ For each model, we will import the data in the same way but will need to pre-pro
 
 ### Results <a name="overview-results"></a>
 
-The goal for the project was to build a model that would accurately predict the customers that would sign up for the *delivery club*.  This would allow for a much more targeted approach when running the next iteration of the campaign.  A secondary goal was to understand what the drivers for this are, so the client can get closer to the customers that need or want this service, and enhance their messaging.
+The goal for the project was to 
 
-Based upon these, the chosen the model is the Random Forest as it was a) the most consistently performant on the test set across classification accuracy, precision, recall, and f1-score, and b) the feature importance and permutation importance allows the client an understanding of the key drivers behind *delivery club* signups.
-
-<br>
-**Metric 1: Classification Accuracy**
-
-* KNN = 0.936
-* Random Forest = 0.935
-* Decision Tree = 0.929
-* Logistic Regression = 0.866
-
-<br>
-**Metric 2: Precision**
-
-* KNN = 1.00
-* Random Forest = 0.887
-* Decision Tree = 0.885
-* Logistic Regression = 0.784
-
-<br>
-**Metric 3: Recall**
-
-* Random Forest = 0.904
-* Decision Tree = 0.885
-* KNN = 0.762
-* Logistic Regression = 0.69
-
-<br>
-**Metric 4: F1 Score**
-
-* Random Forest = 0.895
-* Decision Tree = 0.885
-* KNN = 0.865
-* Logistic Regression = 0.734
 <br>
 <br>
 ### Growth/Next Steps <a name="overview-growth"></a>
@@ -215,7 +182,7 @@ Once we have done this, we can perform feature selection using these summaries a
 
 Vector magnitudes are calculated from 3 dimensions (front, sideways, upwards) as:
 
-$\mathrm{magnitude}=\sqrt{x^2+y^2+z^2}$
+\mathrm{magnitude}=\sqrt{x^2+y^2+z^2}
 
 <br>
 ```python
@@ -290,7 +257,7 @@ One downside of this approach is the long run-times that LinearSVC can take, as 
 We compare this to an elegant mathematical approach to feature selection called Correlation-Based feature Selection (CFS), which is also used in HAR.
 CFS chooses the smallest set of features that are highly correlated with the class while being minimally correlated with each other. The core of this approach uses the merit function:
 
-$\mathrm{Merit_{\mathnormal{S}}}=\frac{k\cdot \bar {r}_{cf}}{\sqrt{k+k(k-1)\bar {r}_{ff}}}$
+\mathrm{Merit_{\mathnormal{S}}}=\frac{k\cdot \bar {r}_{cf}}{\sqrt{k+k(k-1)\bar {r}_{ff}}}
 
 Multicollinearity occurs when two or more input variables are *highly* correlated with each other, it is a scenario we attempt to avoid as in short, while it won't necessarily affect the predictive accuracy of our model, it can make it difficult to trust the statistics around how well the model is performing, and how much each input variable is truly having. CFS does a good job of reducing multicollinearity as it assigns more merit to features that are not correlated.
 
