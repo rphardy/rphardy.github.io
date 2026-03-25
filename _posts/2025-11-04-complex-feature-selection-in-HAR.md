@@ -245,7 +245,7 @@ Feature Selection is the process used to select the input variables that are mos
 
 * **Improved Model Accuracy** - eliminating noise can help true relationships stand out
 * **Lower Computational Cost** - our model becomes faster to train, and faster to make predictions
-* **Explainability** - understanding & explaining outputs for stakeholder & customers becomes much easier
+* **Explainability** - understanding & explaining outputs for stakeholders becomes much easier
 
 There are many, many ways to apply Feature Selection.  These range from simple methods such as a *Correlation Matrix* showing variable relationships, to *Univariate Testing* which helps us understand statistical relationships between variables, and then to even more powerful approaches like *Recursive Feature Elimination (RFE)* which is an approach that starts with all input variables, and then iteratively removes those with the weakest relationships with the output variable.
 
@@ -260,21 +260,25 @@ CFS chooses the smallest set of features that are highly correlated with the cla
 
 \mathrm{Merit_{\mathnormal{S}}}=\frac{k\cdot \bar {r}_{cf}}{\sqrt{k+k(k-1)\bar {r}_{ff}}}
 
-Multicollinearity occurs when two or more input variables are *highly* correlated with each other, it is a scenario we attempt to avoid as in short, while it won't necessarily affect the predictive accuracy of our model, it can make it difficult to trust the statistics around how well the model is performing, and how much each input variable is truly having. CFS does a good job of reducing multicollinearity as it assigns more merit to features that are not correlated.
+Multicollinearity occurs when two or more input variables are *highly* correlated with each other, it is a scenario we attempt to avoid as in short, while it won't necessarily affect the predictive accuracy of our model, it can make it difficult to trust the statistics around how well the model is performing, and how much each input variable is truly having. CFS does a good job of reducing multicollinearity since it assigns more merit (defined above) to features that are not correlated.
 
-We'll code this approach in Python and see how it works out!
+We'll code this approach in Python and see how it works out in our model predictions!
 
-Let's first attempt the industry standard approach to feature selection in HAR tasks.
+Let's first attempt an industry standard approach to feature selection in HAR tasks.
 
 <br>
 # LinearSVC + RFECV <a name="linSVCRFECV-title"></a>
 
-We will again utilise the scikit-learn library within Python to select features for our model. The code section below continues from the previous sections:
+We will again utilise the scikit-learn library within Python to select features for our model.
+The code section below continues with our prepared dataframe containing the suite of vector summary statistics.
 
 <br>
 ### Feature Selection <a name="linSVCRFECV-select"></a>
 
-Continuing with our df object from adding our vector features, we import the packages we'll need: LinearSVC, RFECV and StratifiedKFold.
+Continuing with our df object from adding our vector features, we:
+- import the packages we'll need: LinearSVC, RFECV and StratifiedKFold
+- instantiate our Linear SVC estimator
+- run cross-validated random forest estimation
 
 ```python
 
@@ -298,35 +302,13 @@ rfecv = RFECV(
 
 rfecv.fit(X, y)
 
-selected_features = X.columns[rfecv.support_]
-
-regressor = LinearRegression()
-feature_selector = RFECV(regressor)
-
-fit = feature_selector.fit(X,y)
-
-optimal_feature_count = feature_selector.n_features_
-print(f"the optimal number of features is {optimal_feature_count}")
-
-X_new = X.loc[:,feature_selector.get_support()]
-
-import matplotlib.pyplot as plt
-
-plt.style.use('fivethirtyeight')
-plt.plot(range(1, len(fit.cv_results_['mean_test_score']) + 1), fit.cv_results_['mean_test_score'], marker = "o")
-plt.ylabel("Model Score")
-plt.xlabel("Number of Features")
-plt.xticks(range(1,len(fit.cv_results_['mean_test_score'])+1,1))
-plt.title(f"Feature Selection using RFE w CV \n Optimal number of features is {optimal_feature_count} (at score of {round(max(fit.cv_results_['mean_test_score']),4)})")
-plt.tight_layout()
-plt.show()
-
 ```
+
 Well, this is still running after an hour...
 While this will eventually complete, and deliver a nice set of features to use in modelling our prediction, it can take minutes to over an hour! 
 
 We'd need something faster if we were investigating a range of new exercises.
-Let's see how we get on using a simpler approach.
+Let's see how we go using a simpler approach to feature selection.
 
 # CFS Feature Selection <a name="cfs-title"></a>
 
@@ -446,11 +428,113 @@ print(df_selected.head())
 
 # Model Build  <a name="model-title"></a>
 
+```python
+###############################################################
+# prepare dataset for ML
+###############################################################
+
+# Shuffle and trim data
+
+df = shuffle(df_selected, random_state = 42)
+
+# Class Balance
+
+df["classe"].value_counts(normalize = True) # good class balance
+
+###############################################################
+# Split Input Variables and Output Variable
+###############################################################
+
+X = df.drop(["classe"], axis = 1)
+y = df["classe"]
+
+###############################################################
+# Split Out Training and Test Sets
+###############################################################
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state = 42, stratify = y)
+
+###############################################################
+# Model Training
+###############################################################
+
+clf = RandomForestClassifier(random_state = 42, n_estimators = 500, max_features = 6)
+clf.fit(X_train, y_train)
+
+```
+
+
+
 # Model Test / Training Accuracy  <a name="modelling-application"></a>
+
+```python
+# Assess model accuracy
+
+y_pred_class = clf.predict(X_test) #default 50%. n of trees, that came to conclusion data point was in the positive/negative class
+y_pred_prob = clf.predict_proba(X_test)[:,1]
+
+# Confusion matrix
+
+conf_matrix = confusion_matrix(y_test, y_pred_class)
+
+plt.style.use('bmh')
+plt.matshow(conf_matrix, cmap = "coolwarm")
+plt.gca().xaxis.tick_bottom()
+plt.title("Confusion Matrix")
+plt.ylabel("Actual Class")
+plt.xlabel("Predicted Class")
+for (i,j), corr_value in np.ndenumerate(conf_matrix):
+    plt.text(j, i, corr_value, ha = "center", va = "center", fontsize = 20)
+plt.show()
+
+accuracy_score(y_test, y_pred_class)
+
+# Feature Importance - based on mean decrease in the gini impurity score
+
+feature_importance = pd.DataFrame(clf.feature_importances_)
+feature_names = pd.DataFrame(X.columns)
+feature_importance_summary = pd.concat([feature_names, feature_importance], axis = 1)
+feature_importance_summary.columns = ["input_variable","feature_importance"]
+feature_importance_summary.sort_values(by = "feature_importance", inplace = True)
+
+plt.barh(feature_importance_summary["input_variable"],feature_importance_summary["feature_importance"])
+plt.title("Feature Importance of Random Forest")
+plt.xlabel("Feature Importance")
+plt.tight_layout()
+plt.show()
+
+# Permutation Importance (generally preferred) - the decrease seen when randomising each specific input variable
+
+result = permutation_importance(clf, X_test, y_test, n_repeats = 10, random_state = 42)
+
+permutation_importance = pd.DataFrame(result["importances_mean"])
+feature_names = pd.DataFrame(X.columns)
+permutation_importance_summary = pd.concat([feature_names, permutation_importance], axis = 1)
+permutation_importance_summary.columns = ["input_variable","permutation_importance"]
+permutation_importance_summary.sort_values(by = "permutation_importance", inplace = True)
+
+plt.barh(permutation_importance_summary["input_variable"],permutation_importance_summary["permutation_importance"])
+plt.title("Permutation Importance of Random Forest")
+plt.xlabel("Permutation Importance")
+plt.tight_layout()
+plt.show()
+```
+<img width="445" height="473" alt="image" src="https://github.com/user-attachments/assets/b1524ed0-95ef-4bbe-a159-026ded60eea0" />
+<img width="703" height="464" alt="image" src="https://github.com/user-attachments/assets/64ee9cb3-6e2e-4506-9dae-1833d3de956c" />
+<img width="713" height="465" alt="image" src="https://github.com/user-attachments/assets/f443c13e-683d-4645-930e-4ef30426de3b" />
+
+Accuracy: 0.99898
 
 # Model Accuracy on New Data  <a name="accuracy-summary"></a>
 
+```python
+#
+```
 # Full Set Feature Performance  <a name="fully-featured"></a>
 
+```python
+#
+```
 # Growth & Next Steps  <a name="growth-next-steps"></a>
+
 
