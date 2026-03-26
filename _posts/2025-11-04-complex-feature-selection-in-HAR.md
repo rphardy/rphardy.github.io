@@ -211,7 +211,7 @@ In the next code block we do four things:
 3. Define the vector statistics that we wish to calculate to use as features in the random forest model along with the grouping we will use to aggregate to these, and
 4. Run our sensor data through this to create these new variables as vector summaries.
 
-Once we have done this, we can perform feature selection using these summaries as features, which will hopefully contain all sensor nformation in a reduced feature space.
+Once we have done this, we can perform feature selection using these summaries as features, which will hopefully contain all sensor information in a reduced feature space.
 
 Vector magnitudes are calculated from 3 dimensions (front, sideways, upwards) as:
 
