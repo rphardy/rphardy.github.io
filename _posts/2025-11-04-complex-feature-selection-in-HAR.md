@@ -1074,8 +1074,8 @@ The features contributing most to prediction, calculated by time window, are:
 1. The maximum magnetometer reading of the dumbbell sensor
 2. Variance of the roll from the belt sensor
 3. Variance of the gyrometer reading from the dumbbell sensor
-4. Maximum magnetometer reading from the dumbbell sensor
-5. Minimum magnetometer reading from the dumbbell sensor
+4. Minimum magnetometer reading from the dumbbell sensor
+5. Minimum magnetometer reading from the arm sensor
 
 <br>
 <br>
