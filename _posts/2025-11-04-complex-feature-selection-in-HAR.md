@@ -16,7 +16,7 @@ Our client, a Human Activity Recognition (HAR) research team, wants to utilise M
     - [Growth/Next Steps](#overview-growth)
 - [01. Data Overview](#data-overview)
 - [02. Modelling Overview](#modelling-overview)
-- [03. Vector Calculations](#veccalc-title)
+- [03. Vector and Window Calculations](#veccalc-title)
 - [04. Linear SVC + RFECV Feature Selection](#linSVCRFECV-title)
 - [05. CFS Feature Selection](#cfs-title)
 - [06. Model Build](#model-title)
@@ -138,12 +138,12 @@ As we are predicting a categorical output using granular data from many inputs i
 From there, we include the identified features in a Random Forest model consisting of 500 Decision trees, to make our movement class predictions.
 
 <br>
-# Vector Calculations <a name="veccalc-title"></a>
+# Vector and Window Calculations <a name="veccalc-title"></a>
 
 We utilise the numpy and pandas libraries within Python to compute vector magnitudes for all sensors. The code sections below are broken up into 2 key sections:
 
 * Data Import
-* Data Preprocessing - vector calculations
+* Data Preprocessing - vector calculations, window-level statistics.
 
 <br>
 ### Data Import <a name="veccalc-import"></a>
@@ -213,7 +213,7 @@ In the next code block we do four things:
 
 Once we have done this, we can perform feature selection using these window summaries as features, which will hopefully contain all sensor information in a reduced feature space.
 
-We need to be careful here. To do this, we are assuming that our testing set will also contain multiple observations from a single time-window. If we were to test on only a few single timepoints, say a holdout set of only 20 observations from different windows and on different subjects, we could not calculate meaningful window summary statistics! Running this pre-processing on such a test set would give near-0 values, and these summaries would not provide any predictive information.
+We need to be careful here. To do this, we are assuming that our testing set will also contain multiple observations from a single time-window. If we were to test on only a few single timepoints, say a hold-out set of only 20 observations from different windows and on different subjects, we could not calculate meaningful window summary statistics! Attempting to run this pre-processing on such a test set would give near-0 values for statistical summaries, and these summaries would not provide any predictive information. 
 
 Our test set contains 20% of the data, stratified by class, which gives hundreds of observations from only a few subjects and curl repetitions, so there is likely to be enough data in our test set to produce these summaries there. 
 
@@ -487,6 +487,7 @@ With the function now built, let's standardise our candidate feature set and run
 
 First, we standardise our data so that all candidate features are scaled, having their original values mapped to numbers between -1 and 1, with their mean at 0.
 Then, we run our CFS Selector function to apply CFS and choose the most independently predictive features!
+
 <br>
 ```python
 
