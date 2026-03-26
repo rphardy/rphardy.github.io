@@ -1054,9 +1054,10 @@ After CFS was run on the full HAR dataset, we have the following fields as featu
 | pitch_forearm_sum | Independent | sum over the time window of the pitch from the forearm sensor (pitch calculated from accelerometry) |
 | gyros_forearm_mag_max | Independent | (gyrometry) maximum gyrometer reading over a time window of the forearm sensor |
 | gyros_forearm_mag_min | Independent | (gyrometry) minimum gyrometer reading over a time window of the forearm sensor |
-<br>
 
+<br>
 <img width="439" height="474" alt="image" src="https://github.com/user-attachments/assets/02e87961-9581-4e16-973f-d69df47d0f6e" />.
+
 <br>
 Accuracy: 1.0
 
