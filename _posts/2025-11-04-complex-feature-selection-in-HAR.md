@@ -115,7 +115,7 @@ After some data pre-processing in Python, we have a dataset for modelling that c
 |---|---|---|
 | classe | Dependent | A categorical variable showing the lift class |
 | num_window | Independent | The time window in which the sensor data was collected - not used for modelling  |
-| roll/pitch/yaw_belt/arm/forearm/dumbbell | Independent | The roll,pitch or yaw reading for a sensor collection in the time window at either belt/arm/forearm/dumbbell sensors |
+| roll/pitch/yaw_belt/arm/forearm/dumbbell | Independent | The roll,pitch or yaw derived for a sensor collection in the time window at one of belt/arm/forearm/dumbbell sensors |
 | total_accel_belt/arm/dumbbell/forearm | Independent | The total accelerometer data in 3 dimensions x,y,z at the belt, arm, dumbbell or forearm sensor |
 | gyros/accel/magnet_belt_x/y/z | Independent | The gyrometer, accelerometer and magnetometer belt sensor readings in x/y/z dimensions: forwards, sideways, upwards  |
 | gyros/accel/magnet_arm_x/y/z | Independent | The gyrometer, accelerometer and magnetometer armband sensor readings in x/y/z dimensions: forwards, sideways, upwards |
