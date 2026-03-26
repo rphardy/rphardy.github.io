@@ -38,7 +38,7 @@ For this, they collected data on six subjects using sensors strapped to their be
 The HAR team would like to classify the movement that the next subject does, and provide this as feedback to them quickly, to guide exercise coaching.
 
 Based upon the data they've collected, we will look to understand the *prediction accuracy* of a model built to classify the lift, and test this on a hold out set of 'new' lifters that have performed their lifts earlier under the same conditions. 
-This would provide the HAR team with a model to then develop a visual system that can provide a new lifter in their lab with technique cues, to quickly improve their movement during exercise. 
+This would provide the HAR team with a model to develop a visual system that can provide a new lifter in their lab with technique cues, to quickly improve their movement during exercise. 
 
 The HAR team has access to a much larger set of measures and can train their own models on this data, and they have provided us with access to a small subset of their training data for us to use in our Machine Learning build.
 
