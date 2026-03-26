@@ -79,15 +79,17 @@ The only errors we made training on this set alone compared to the study's more 
 
 A feature selection strategy using industry standard LinearSVC + RFECV selection proved too time-consuming to run, and could not have improved on the modelling results found using the CFS selection strategy as shown. 
 
-Feature and Permutation Importance suggests that the most informative measures in classifying bicep curl movement class come from the belt and forearm: The roll range and acceleration range of the belt, and the maximum roll and minimum pitch of the forearm. This is intuitive, as these measures derived from acceleromtery describe differences in the 'start' and 'end' points of the forearm relative to the body in 3D space within a given time window. 
+Feature and Permutation Importance suggests that the most informative measures in classifying bicep curl movement class come from the belt and forearm: The roll range and acceleration range of the belt, and the maximum roll and minimum pitch of the forearm. This is intuitive, as these measures derived from acceleromtery describe differences in a given time window between the 'start' and 'end' points of the forearm relative to the body in 3D space. 
 
 <br>
 <br>
 ### Growth/Next Steps <a name="overview-growth"></a>
 
-Since predictive accuracy was very high, our feature selection and modelling approach could be tested on new subjects performing different types of lifts, to see if this accuracy translates to different movements.
+Our 6‑feature model performed extremely well on biceps‑curl data, but new movements would require repeating the same CFS + Random Forest workflow using data collected specifically for those exercises. 
 
-From a data point of view, further feature engineering could be undertaken for more complex movements, with features likely to be similar to the ones included in the complete set from the original study.
+With more complex lifts, additional feature engineering and thoughtful sensor placement would be needed to capture meaningful pitch/roll differences between correct and incorrect technique. 
+
+For example, in a barbell squat, sensors on the belt and knees — not the forearm — would better distinguish proper form from common errors like knees caving in or excessive hip‑back movement.
 
 <br>
 <br>
