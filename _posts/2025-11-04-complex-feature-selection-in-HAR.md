@@ -280,13 +280,13 @@ One downside of this approach is the long run-times that LinearSVC can take, as 
 We compare this to an elegant mathematical approach to feature selection called Correlation-Based feature Selection (CFS), which is also used in HAR.
 CFS chooses the smallest set of features that are highly correlated with the class while being minimally correlated with each other. The core of this approach uses the merit function:
 
-$$\mathrm{Merit_{\mathnormal{S}}}=\frac{k\cdot \bar {r}_{cf}}{\sqrt{k+k(k-1)\bar {r}_{ff}}}$$
+$\mathrm{Merit_{\mathnormal{S}}}=\frac{k\cdot \bar {r}_{cf}}{\sqrt{k+k(k-1)\bar {r}_{ff}}}$
 
 Multicollinearity occurs when two or more input variables are *highly* correlated with each other, it is a scenario we attempt to avoid as in short, while it won't necessarily affect the predictive accuracy of our model, it can make it difficult to trust the statistics that describe how well the model is performing, and how much effect each input variable is truly having. CFS does a good job of reducing multicollinearity since it assigns more merit (defined above) to features that are not correlated.
 
 We'll code this approach in Python and see how it works out in our model predictions!
 
-Let's first attempt an industry standard approach to feature selection in HAR tasks.
+Let's first attempt an industry standard approach to feature selection in HAR tasks and see how far we can get with this.
 
 <br>
 # LinearSVC + RFECV <a name="linSVCRFECV-title"></a>
@@ -294,57 +294,105 @@ Let's first attempt an industry standard approach to feature selection in HAR ta
 We will again utilise the scikit-learn library within Python to select features for our model.
 The code section below continues with our prepared dataframe containing the suite of vector summary statistics.
 
+Our first approach uses a simple linear machine‑learning model (LinearSVC) to figure out which features are genuinely useful for predicting the *classe* activity labels. A wrapper method (RFECV) then repeatedly tests smaller and smaller sets of features to find the smallest set that still gives strong performance. Using a careful, step‑by‑step trimming process, the model learns which features matter most, RFECV removes the weakest one, and then the model is retrained to see how performance changes. This repeats until the best subset is found.
+
 <br>
 ### Feature Selection <a name="linSVCRFECV-select"></a>
 
 Continuing with our df object containing our new vector features, we:
-- import the packages we'll need: LinearSVC, RFECV and StratifiedKFold
-- instantiate our Linear SVC estimator
-- run cross-validated random forest estimation
+- Import the packages we'll need: LinearSVC, RFECV and StratifiedKFold, along with Pipeline to pipe our standardisation step, and StandardScaler to apply standardisation.
+- Instantiate our Linear SVC estimator in this pipeline, that scales all candidate features prior to linear modelling using standardised scaling.
+- run cross-validated random forest estimation.
+
+We need to set a few model hyperparameters specifying what we want the models to do: 
+The LinearSVC model produces a simple linear formula that assigns a weight to each feature, making it easy to see which features help the model make decisions. For this, the regularization setting C=1.0 keeps the model balanced so it doesn’t rely too heavily on any single feature, while dual=False makes the training faster for datasets with many samples, and max_iter=5000 ensures the model has enough time to settle on a stable solution. 
+
+RFECV then uses this model to perform feature selection by repeatedly removing the *single* least important feature (step=1) and checking how well the model performs each time. It evaluates each feature set using 5‑fold stratified cross‑validation, which means the data is split into five parts in a way that preserves the class balance, giving a fair and reliable estimate of accuracy. 'importance_getter' helps the RFECV() function in Python to understand where to find features when they've come in through a pipeline.
+
+The process chooses the feature set that gives the best accuracy score, and n_jobs=-1 simply means the computer uses all its available processing power to speed up this repeated testing. Together, these steps carefully identify the smallest set of features giving strong predictive performance.
 
 ```python
 
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC
 from sklearn.feature_selection import RFECV
 from sklearn.model_selection import StratifiedKFold
 
-estimator = LinearSVC(
-    C=1.0,
-    dual=False,
-    max_iter=5000
-)
+estimator = Pipeline([
+    ('scaler', StandardScaler()),
+    ('clf', LinearSVC(C=1.0, dual=False, max_iter=5000))
+])
 
 rfecv = RFECV(
     estimator=estimator,
     step=1,
     cv=StratifiedKFold(5),
     scoring='accuracy',
-    n_jobs=-1
+    n_jobs=-1,
+    importance_getter='named_steps.clf.coef_'
 )
 
 rfecv.fit(X, y)
 
 ```
 
-Well, this is still running, after an hour...
+Well, it’s been running for over an hour now on a laptop, and it still hasn’t finished...
 
-While this will eventually converge, and deliver a nice set of features to use in modelling our prediction, it can take minutes to over an hour! This is enough of a reason to try something else, so let's end this line of investigation now.
+While this will eventually complete, and deliver a nice set of features to use in modelling our prediction, it can take over an hour depending on processing speed! We may also run out of RAM before the algorithms can finish. This is reason enough to try something else, so let's end this process and try some new parameters that may speed up the feature selection.
 
-We'd need something faster if we were investigating a range of new exercises.
+We'd need something significantly faster if we were investigating a range of new exercises. Let's reduce max_iter to 2000 to reduce the time LinearSVC has to reach a solution, increase the number of features we remove at a time by RFECV by changing step from 1 to 20, and change our cross-fold stratification from 5 'chunks' to only 2.
 
-Let's see how we go in using a simpler approach to feature selection.
+This could speed processing significantly, but at the cost of some accuracy in finding the 'ideal' set from our large range of HAR data. 
+We will likely still find predictive features for a model that are the most associated with the class, but this may not be careful enough to distinguish the most predictive of these.  
 
-We'll create some functions using NumPy in Python to define what we want our CFS to do: define merit mathematically, and add features through this algorithm as long as they continue to improve merit. 
-
-Then we'll standardise the scaling of our selected features, and output a new dataframe for modelling containing only the scaled features found by our CFS function.  
-
-# CFS Feature Selection <a name="cfs-title"></a>
+Let's reset our hyperparameters and re-run our code.
 
 ```python
 
-############################################################################
-# Step 1: Implement a CFS selector
-############################################################################
+estimator = Pipeline([
+    ('scaler', StandardScaler()),
+    ('clf', LinearSVC(C=1.0, dual=False, max_iter=2000))
+])
+
+rfecv = RFECV(
+    estimator=estimator,
+    step=20,
+    cv=StratifiedKFold(2),
+    scoring='accuracy',
+    n_jobs=-1,
+    importance_getter='named_steps.clf.coef_'
+)
+
+rfecv.fit(X, y)
+
+```
+This has completed in 15 minutes and has identified that the optimum number of features is 54.
+
+<img width="735" height="396" alt="image" src="https://github.com/user-attachments/assets/bc0821cb-7c03-415a-999e-3c300b6ca802" />
+
+This has still taken a very long time in our context, too long for our purpose to provide real-time technique cues to a new lifter, and we're already sacrifing model accuracy to speed this up. Our expectation would be that around 10-25 features would be predictive, using our first hyperparameter settings.
+
+Interestingly, only 5 of our features remain at the sensor recorded level. 
+49 come from our set of calculated vector summaries, very interesting! The vector summaries are capturing most, but not all of the predictive information contained in the original sensor-level data.
+
+We could re-run RFECV on this subset with more granularity as we tried at first, to distinguish further, but this approach is still too time-consuming by this pointfor our purposes.
+
+Let's leave the HAR industry approach for more powerful machines, and try a more elegant approach to feature selection.
+Instead of LinearSVC + RFECV, let's try Correlation-Based Feature Selection (CFS). 
+
+We'll create some functions using NumPy in Python to define what we want our CFS to do. 
+We'll define 'merit' mathematically in our context, and add features through this algorithm, for as long as they continue to improve merit. 
+
+Then we'll standardise the scaling of all candidate features and output a new dataframe for modelling that contains just the features found by a CFS function.  
+
+# CFS Feature Selection <a name="cfs-title"></a>
+
+Let's build our CFS function. 
+
+This code defines a custom Correlation‑based Feature Selector (CFS) that works directly in scikit‑learn. It searches for a small set of features that are both highly correlated with the target and not strongly correlated with each other. The selector evaluates candidate subsets using the classic CFS “merit” formula, adds features one at a time when they improve the merit score, and stops when no further improvement occurs. After fitting, it stores the indices of the chosen features and the transform method returns a reduced version of the dataset containing only those selected columns.
+
+```python
 
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import StandardScaler
@@ -410,10 +458,10 @@ class CFSSelector(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
         return X[:, self.selected_indices_]
+```
+With the function built, let's standardise our candidate feature set and run it through our CFS process.
 
-###################################################################################
-# Step 2 : Run CFS and inspect the selected features: using standardised scaling
-###################################################################################
+```python
 
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(df.values)
@@ -421,21 +469,36 @@ X_scaled = scaler.fit_transform(df.values)
 selector = CFSSelector().fit(X_scaled, y)
 
 selected_features = df.columns[selector.selected_indices_]
+```
 
+Let's look at our feature set:
+
+```python
 print("Number of selected features:", len(selected_features))
 print("\nSelected features:")
 for f in selected_features:
     print("-", f)
+```
 
-###########################################################################################   
-# when we run CFS on this dataset, 
-# - CFS output is correct for this dataset
-# - The 6 features here are the best subset in the feature space.
-###########################################################################################
+The Number of selected features is (only!): 6
+They are:
+- roll_belt_range
+- pitch_forearm_min
+- pitch_belt_range
+- magnet_arm_x
+- belt_accel_mag_range
+- roll_forearm_max
 
-########################################################################
-# Step 3: Build a dataframe containing only 'classe' + selected features
-########################################################################
+Importantly, this was found in only a few seconds!
+
+We've successfully run CFS on the 'training' set, the smaller set of data provided to us by the HAR team. In reality, using their full dataset, the HAR team would find 17 features using CFS, which is in the likely range of features that LinearSCV+RFECV might find if it completed successfully when prioritising discrimination over speed as we initially tried.
+
+The 6 features here are the top subset in the feature space, and we can compare these with the 54 we found using LinearSVC+RFECV.
+Again, vector sumamries are showing to be predictive. Five features are vector summaries (a min, a max, and a few ranges), and one is on the level of the original sensor data (the magnetometer for the arm, in the sideways direction).
+
+Let's build a model data set using our 6 top features...
+
+```python
 
 # Convert selected feature names to a list
 selected_feature_list = list(selected_features)
@@ -454,19 +517,22 @@ print(df_selected.head())
 
 ```
 
-There we have it. A new dataframe containing the features that are most correlated with classe, that were the least correlated with eachother.
+There we have it. A new dataframe *df_selected* containing the features that are most correlated with classe, that were the least correlated with eachother.
+
 Credit for this approach goes to: Mark A Hall, whose thesis on CFS can be found at: https://ml.cms.waikato.ac.nz/publications/1999/99MH-Thesis.pdf
+
+CFS has reduced the feature space, and identified some top features to include in a class prediction model. We can move on to building a predictor.
 
 # Model Build  <a name="model-title"></a>
 
-Let's now build our Random Forest model:
+Let's now build our Random Forest model, following the steps in the code below...
 
 ```python
 ###############################################################
 # prepare dataset for ML
 ###############################################################
 
-# Re-Shuffle our data
+# Re-Shuffle our data for training
 
 df = shuffle(df_selected, random_state = 42)
 
@@ -483,13 +549,13 @@ y = df["classe"]
 
 ###############################################################
 # Split Out Training and Test Sets -
-# ensuring stratification evenly to classes
+# ensure stratification is even between classes
 ###############################################################
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state = 42, stratify = y)
 
 ###############################################################
-# Model Training
+# Model Training - train our model
 ###############################################################
 
 clf = RandomForestClassifier(random_state = 42, n_estimators = 500, max_features = 6)
@@ -497,16 +563,22 @@ clf.fit(X_train, y_train)
 
 ```
 
-We've fit a Random Forest model containing 500 decision trees, using just 6 features calculated and selected using all of the raw sensor data.
-Let's next see its Accuracy classifying movement on the 20% test set.
+We've fit a Random Forest model containing 500 decision trees, using just the 6 features selected by CFS from all of the raw sensor data, and our created vector summaries.
+Let's next see its Accuracy in classifying movement on the test set.
 
 # Model Test / Training Accuracy  <a name="modelling-application"></a>
+
+Based on the values of our 6 features, each of the 500 decision trees in the Random Forest independently predicts one of the 5 movement classes for every row in the test set. A decision tree chooses thresholds during training by testing many possible split points and selecting the one that most reduces Gini impurity. During prediction, the tree simply compares each feature value to these learned thresholds to decide which branch to follow. Each tree routes the sample down its branches until it reaches a leaf node, and the class stored in that leaf becomes that tree’s ‘vote’. These votes represent the class each tree considers most likely given the feature values it has seen. The Random Forest then counts all votes across the 500 trees, and the class with the most votes becomes the model’s final prediction for each row in the test set. 
+
+We output an object y_pred_prob that views the probabilities that each decision tree would arrive at each of the 5 outcomes for each row in the test set. 
+
+We then build a confusion matrix to show the model predictions vs actual class values, and output metrics on the importance of each feature to the predictive power of the model.
 
 ```python
 # Assess model accuracy
 
-y_pred_class = clf.predict(X_test) #default 50%. n of trees, that came to conclusion data point was in the positive/negative class
-y_pred_prob = clf.predict_proba(X_test)[:,1]
+y_pred_class = clf.predict(X_test)
+y_pred_prob = clf.predict_proba(X_test)
 
 # Confusion matrix
 
@@ -554,13 +626,19 @@ plt.xlabel("Permutation Importance")
 plt.tight_layout()
 plt.show()
 ```
-<img width="445" height="473" alt="image" src="https://github.com/user-attachments/assets/b1524ed0-95ef-4bbe-a159-026ded60eea0" />.
+<img width="445" height="473" alt="image" src="https://github.com/user-attachments/assets/b1524ed0-95ef-4bbe-a159-026ded60eea0" />
+
+The confusion matrix shows *almost* perfect prediction. The Accuracy of this model is: 0.99898. 
+
+Any model trained on this data could not get meaningfully more accurate than this. A model trained on the full HAR data may be able to get perfect prediction on this test set. 
+At this level of accuracy, we'd prefer a model with few features such as this over, the LinearSVC+RFECV model that contained 54 features. 
+mainly for explainability and run speed, especially since we need good speed in predicting the class of a new lift.
+
+Feature Importance vs Permutation Importance is shown here... 
 
 <img width="703" height="464" alt="image" src="https://github.com/user-attachments/assets/64ee9cb3-6e2e-4506-9dae-1833d3de956c" />.
 
 <img width="713" height="465" alt="image" src="https://github.com/user-attachments/assets/f443c13e-683d-4645-930e-4ef30426de3b" />.
-
-Accuracy: 0.99898 (!)
 
 # Model Accuracy on New Data  <a name="accuracy-summary"></a>
 
