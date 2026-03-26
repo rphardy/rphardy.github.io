@@ -85,7 +85,7 @@ Feature and Permutation Importance suggests that the most informative measures i
 <br>
 ### Growth/Next Steps <a name="overview-growth"></a>
 
-Since predictive accuracy was very high - our feature selection and modelling approach could be tested on new subjects doing different types of lifts, to see if this accuracy translates to different movements.
+Since predictive accuracy was very high, our feature selection and modelling approach could be tested on new subjects performing different types of lifts, to see if this accuracy translates to different movements.
 
 From a data point of view, further feature engineering could be undertaken for more complex movements, with features likely to be similar to the ones included in the complete set from the original study.
 
