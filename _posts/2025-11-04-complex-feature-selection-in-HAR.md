@@ -68,7 +68,7 @@ The goal for the project was to convert sensor data into a useful predictor that
 - Error 3: Lower the dumbbell only halfway (Class D/3)
 - Error 4: Throw the hips to the front (Class E/4)
 
-Our model trained on the data, using 6 features found by Correlation-based Feature Selection (CFS), calculated from this same data, gave an accuracy score of: 99.9 %. An *almost* perfect prediction result!
+Our model trained on the data, using 6 features found by Correlation-based Feature Selection (CFS), calculated from this same data, gave an accuracy score of: 99.9 %. An *almost* perfect prediction result.
 
 (A model using 17 features found by CFS calculated from the full research data found this subset too simple for it, at an accuracy score of 100%.) 
 
@@ -79,6 +79,8 @@ The only errors we made training on this set alone compared to the study's more 
 A feature selection strategy using industry standard LinearSVC + RFECV selection proved too time-consuming to run, and could not have improved on the modelling results found using the CFS selection strategy as shown. 
 
 Feature and Permutation Importance suggests that the most informative measures in classifying bicep curl movement class come from the belt and forearm: The roll range and acceleration range of the belt, and the maximum roll and minimum pitch of the forearm. This is intuitive, as these measures (derived from both acceleromtery and gyrometry) describe differences in a given time window between the 'start' and 'end' points of the forearm relative to the body in 3D space. 
+
+This was achieved with the caveat that the same subject performing the same movement contributed to both our test set for this feature selection and our training set. So our summary statistics at window level were shared across training and test sets - causing leakage and making them easy to predict. In reality, a better way to have done this would be to have different subjects in each set, or calculate summaries separately, after splitting to train and test.
 
 <br>
 <br>
