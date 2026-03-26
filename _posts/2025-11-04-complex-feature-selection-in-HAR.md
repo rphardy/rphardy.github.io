@@ -5,7 +5,7 @@ image: "/posts/classification-title-img.png"
 tags: [Human Activity Recognition, Machine Learning, Classification, Python]
 ---
 
-Our client, a HAR team, wants to utilise Machine Learning to predict a movement activity type!
+Our client, a Human Activity Recognition (HAR) research team, wants to utilise Machine Learning to predict a movement activity type!
 
 # Table of contents
 
@@ -31,15 +31,18 @@ ___
 
 ### Context <a name="overview-context"></a>
 
-Our client, an Human Activity Recognition (HAR) study team, ran a study using HAR sensors to provide real-time feedback of weightlifting technique.  They want to classify a subject's movement on a bicep curl as using 'correct technique' or one of four common technique errors. 
+Our client, an Human Activity Recognition (HAR) study team, ran a study using HAR sensors to provide real-time feedback of weightlifting technique.  They want to classify a subject's movement on a bicep curl as being either 'correct technique', or as one of four common technique errors. 
 
-For this, they collected data on six subjects using sensors strapped to their belt, forearm, arm, and a held dumbbell. The subjects performed a biceps curl with correct and common incorrect technique. 
+For this, they collected data on six subjects using sensors strapped to their belt, forearm, arm, and a held dumbbell. The subjects new to bicep curls, performed a biceps curl with correct and common incorrect beginner technique according to a weight-lifting coach. 
 
-For the next subject they would like to classify the movement they are doing, and provide this as feedback.
+The HAR team would like to classify the movement that the next subject does, and provide this as feedback to them quickly, to guide exercise coaching.
 
-Based upon the data they've collected, we will look to understand the *prediction accuracy* of a model built to classify the lift, and test it on new lifters. This would allow the HAR team to provide a new lifter with technique cues to improve their movement during exercise. The HAR team has access to a much larger set of measures and can train their own models on this, whereas we only have access to the small subset of training data that they've sent to us to use in our Machine Learning builds.
+Based upon the data they've collected, we will look to understand the *prediction accuracy* of a model built to classify the lift, and test this on a hold out set of 'new' lifters that have performed their lifts earlier under the same conditions. 
+This would provide the HAR team with a model to then develop a visual system that can provide a new lifter in their lab with technique cues, to quickly improve their movement during exercise. 
 
-Let's use Machine Learning to take on this task!
+The HAR team has access to a much larger set of measures and can train their own models on this data, and they have provided us with access to a small subset of their training data for us to use in our Machine Learning build.
+
+Let's use Machine Learning to take on this classification task!
 
 <br>
 <br>
@@ -66,16 +69,17 @@ The goal for the project was to convert sensor data into a useful predictor that
 - Error 3: Lower the dumbbell only halfway (Class D/3)
 - Error 4: Throw the hips to the front (Class E/4)
 
-Our model trained on the data, using 6 features found by CFS calculated from this same data gave an accuracy score of: 99.9 %. An *almost* unbeatable result!
-A model using 17 features found by CFS calculated from the full research data found this subset too simple for it, at an accuracy score of 100%. 
+Our model trained on the data, using 6 features found by Correlation-based Feature Selection (CFS), calculated from this same data, gave an accuracy score of: 99.9 %. An *almost* perfect prediction result!
 
-The only errors we made training on this set alone compared to the study's more powered model based on a fuller dataset are shown in the off-diagonal cells in the confusion matrix below: a difference of just 4 mis-classifications, but made using 11 fewer features in our model!
+(A model using 17 features found by CFS calculated from the full research data found this subset too simple for it, at an accuracy score of 100%.) 
+
+The only errors we made training on this set alone compared to the study's more powered model based on a fuller dataset are shown in the off-diagonal cells in the confusion matrix below: a difference of just 4 mis-classifications, but made using 11 fewer features in the Decision Trees in our Random Forest model!
 
 <img width="445" height="473" alt="image" src="https://github.com/user-attachments/assets/b1524ed0-95ef-4bbe-a159-026ded60eea0" />
 
 A feature selection strategy using industry standard LinearSVC + RFECV selection proved too time-consuming to run, and could not have improved on the modelling results found using the CFS selection strategy as shown. 
 
-On a hold out set, our chosen model gave a score of 20/20 correctly classified lifts, based on single sensor snapshots of bicep curl readings
+Feature and Permutation Importance suggests that the most informative measures in classifying bicep curl movement class come from the belt and forearm: The roll range and acceleration range of the belt, and the maximum roll and minimum pitch of the forearm. This is intuitive, as these measures derived from acceleromtery describe differences in the 'start' and 'end' points of the forearm relative to the body in 3D space within a given time window. 
 
 <br>
 <br>
@@ -96,7 +100,7 @@ We will be predicting the categorical *classe* metric from the subset *training*
 The key variables hypothesised to predict this will come from the sensor data contained in this set.
 
 We calculate vector statistics from the repeat sensor collections in windows of different length (0.5 to 2.5 seconds) during the lift. For this training data, a lifter had completed 10 repetitions of a bicep curl exactly according to instructions specified by a weight lifting coach. 
-The coach instructed to lift using a soecified technique (Class A), or to perform one of the following errors:
+The coach instructed to lift using a specified technique (Class A), or to perform one of the following errors:
 Error 1: Throw the elbows to the front (Class B)
 Error 2: Lift the dumbbell only halfway (Class C)
 Error 3: Lower the dumbbell only halfway (Class D)
@@ -128,9 +132,9 @@ If that can be achieved, we can use this model to predict movement type for futu
 As we are predicting a categorical output using granular data from many inputs in a HAR environment, we use a two step approach: 1) calculate vector statistics from the raw sensor data and 2) pass these onto one of two feature selection approaches:
 
 * LinearSVC + RFECV - an industry standard approach to HAR using sensor data.
-* Correlation-Based Feature Selection (CFS) + RF - an elegant selector that trims highly correlated features.
+* Correlation-Based Feature Selection (CFS) - an elegant selector that trims highly correlated features.
 
-From there, we include the identified features in a Random Forest model consisting of 500 Decision trees, to make our movement type class predictions.
+From there, we include the identified features in a Random Forest model consisting of 500 Decision trees, to make our movement class predictions.
 
 <br>
 # Vector Calculations <a name="veccalc-title"></a>
@@ -163,7 +167,8 @@ df = df.drop([
     "new_window"
 ], axis=1)
 
-# Remove columns with too many missing values (>=20): this removes all variables in raw data that were wiped previously - leaving only the complete sensor and time-window data.
+# Remove columns with too many missing values (>=20): this removes all variables in raw data that were wiped previously. This leaves just the complete sensor and time-window data.
+
 missing_counts = df.isna().sum()
 df = df.loc[:, missing_counts < 20]
 
@@ -185,7 +190,7 @@ From the last step in the above code, we see that **28% of movements were class 
 
 For 3D Sensor data, we have certain data preprocessing steps that need to be addressed, including:
 
-* Missing values in the data
+* Dealing with missing values in the data
 * Summarising variables on axes to vectors
 
 <br>
@@ -193,19 +198,26 @@ For 3D Sensor data, we have certain data preprocessing steps that need to be add
 
 There were no missing values in the raw sensor data, as this subset of the study data had been pre-cleaned. So we will just move on to the next step.
 
-We had removed any columns containing missing data on data import, and will create new calculated fields to replace them.
+We had removed any columns containing missing data on data import, and will create new calculated fields using the raw sensor data. 
+Rarely, doing this may create some missing data which will be re-addressed after all fields are ready for feature selection. 
 
 <br>
 <br>
 ##### Summarise variables on axes to vectors
 
-In the next code block we do four things, we firstly group our data into vector groups by sensor, calculate their vector magnitudes, define the vector statistics that we wish to calculate to use as features in the random forest model along with the grouping we will use to aggregate to these, and finally run our sensor data through this to create these new variables as vector summaries.
+In the next code block we do four things:
+1. We group our data into vector groups by sensor, then
+2. Calculate their vector magnitudes,
+3. Define the vector statistics that we wish to calculate to use as features in the random forest model along with the grouping we will use to aggregate to these, and
+4. Run our sensor data through this to create these new variables as vector summaries.
 
-Once we have done this, we can perform feature selection using these summaries as features.
+Once we have done this, we can perform feature selection using these summaries as features, which will hopefully contain all sensor nformation in a reduced feature space.
 
 Vector magnitudes are calculated from 3 dimensions (front, sideways, upwards) as:
 
 $$\mathrm{magnitude}=\sqrt{x^2+y^2+z^2}$$
+
+Let's do this using the numpy and pandas libraries in Python:
 
 <br>
 ```python
@@ -246,7 +258,7 @@ stats = {
     "sum": "sum"
 }
 
-# Apply to all magnitude features + roll/pitch/yaw
+# Apply to all vector magnitude features + roll, pitch and yaw
 candidate_cols = [
     col for col in df.columns
     if any(key in col for key in ["roll", "pitch", "yaw", "_mag"])
@@ -257,13 +269,15 @@ for col in candidate_cols:
         df[f"{col}_{stat_name}"] = df.groupby("num_window")[col].transform(func)
 
 # drop the grouping variable as it is no longer needed and should not be a feature
+
 df = df.drop(columns=["num_window"])
+
 ```
 
 <br>
 ##### Feature Selection
 
-Feature Selection is the process used to select the input variables that are most important to your Machine Learning task.  It can be a very important addition or at least, consideration, in certain scenarios.  The potential benefits of Feature Selection are:
+Feature Selection is the process used to select the input variables that are most important to our Machine Learning task.  It can be a very important addition or at least, consideration, in certain scenarios. For our task in an HAR context, feature selection is extremely important. The potential benefits of Feature Selection are:
 
 * **Improved Model Accuracy** - eliminating noise can help true relationships stand out
 * **Lower Computational Cost** - our model becomes faster to train, and faster to make predictions
@@ -271,22 +285,20 @@ Feature Selection is the process used to select the input variables that are mos
 
 There are many, many ways to apply Feature Selection.  These range from simple methods such as a *Correlation Matrix* showing variable relationships, to *Univariate Testing* which helps us understand statistical relationships between variables, and then to even more powerful approaches like *Recursive Feature Elimination (RFE)* which is an approach that starts with all input variables, and then iteratively removes those with the weakest relationships with the output variable.
 
-For our task in an HAR context, feature selection is extremely important. 
-
-We attempt an industry standard variation of Recursive Feature Elimination called *Recursive Feature Elimination With Cross Validation (RFECV)* using a *Linear Support Vector Classifier* where we split the data into many "chunks" and iteratively train & validate models on each "chunk" separately.  This means that each time we assess different models with different variables included, or eliminated, the algorithm also knows how accurate each of those models was.  LinearSVC learns a linear decision boundary that distinguishes the five exercise‑quality classes using the accelerometer, gyroscope, and magnetometer features, combined with our calculated vector statistics features.
+We attempt an industry standard variation of Recursive Feature Elimination called *Recursive Feature Elimination With Cross Validation (RFECV)* using a *Linear Support Vector Classifier* where we split the data into many "chunks" and iteratively train & validate models on each "chunk" separately.  This means that each time we assess different models with different variables included, or eliminated, the algorithm also knows how accurate each of those models was.  LinearSVC learns a linear decision boundary that distinguishes the five exercise movement classes using the accelerometer, gyroscope, and magnetometer features, combined with our calculated vector statistics features.
 RFECV then uses the model’s coefficients to identify which of all of these features truly contribute to class separation and recursively removes the weakest ones.
-One downside of this approach is the long run-times that LinearSVC can take, as we'll see!
+One downside of this approach is the long run-times that LinearSVC can have, as we'll see!
 
 We compare this to an elegant mathematical approach to feature selection called Correlation-Based feature Selection (CFS), which is also used in HAR.
 CFS chooses the smallest set of features that are highly correlated with the class while being minimally correlated with each other. The core of this approach uses the merit function:
 
 $\mathrm{Merit_{\mathnormal{S}}}=\frac{k\cdot \bar {r}_{cf}}{\sqrt{k+k(k-1)\bar {r}_{ff}}}$
 
-Multicollinearity occurs when two or more input variables are *highly* correlated with each other, it is a scenario we attempt to avoid as in short, while it won't necessarily affect the predictive accuracy of our model, it can make it difficult to trust the statistics that describe how well the model is performing, and how much effect each input variable is truly having. CFS does a good job of reducing multicollinearity since it assigns more merit (defined above) to features that are not correlated.
+Multicollinearity will occur when two or more input variables are *highly* correlated with each other, it is a scenario we attempt to avoid as in short, while it won't necessarily affect the predictive accuracy of our model, it can make it difficult to trust the statistics that describe how well the model is performing, and how much effect each input variable is truly having. CFS does a good job of reducing multicollinearity since it assigns more merit (as defined above) to features that are not correlated.
 
 We'll code this approach in Python and see how it works out in our model predictions!
 
-Let's first attempt an industry standard approach to feature selection in HAR tasks and see how far we can get with this.
+Let's first attempt an industry standard approach to feature selection in HAR tasks and see how far we get.
 
 <br>
 # LinearSVC + RFECV <a name="linSVCRFECV-title"></a>
@@ -294,7 +306,7 @@ Let's first attempt an industry standard approach to feature selection in HAR ta
 We will again utilise the scikit-learn library within Python to select features for our model.
 The code section below continues with our prepared dataframe containing the suite of vector summary statistics.
 
-Our first approach uses a simple linear machine‑learning model (LinearSVC) to figure out which features are genuinely useful for predicting the *classe* activity labels. A wrapper method (RFECV) then repeatedly tests smaller and smaller sets of features to find the smallest set that still gives strong performance. Using a careful, step‑by‑step trimming process, the model learns which features matter most, RFECV removes the weakest one, and then the model is retrained to see how performance changes. This repeats until the best subset is found.
+Our first approach uses a simple linear machine‑learning model (LinearSVC) to figure out which features are genuinely useful for predicting the *classe* activity labels. A wrapper method (RFECV) then repeatedly tests smaller and smaller sets of features to find the smallest set that still gives strong performance. Using a careful, step‑by‑step trimming process, the model learns which features matter most, RFECV then removes the weakest one, and then the model is retrained to see how performance changes. This repeats until the best subset is found.
 
 <br>
 ### Feature Selection <a name="linSVCRFECV-select"></a>
@@ -307,9 +319,11 @@ Continuing with our df object containing our new vector features, we:
 We need to set a few model hyperparameters specifying what we want the models to do: 
 The LinearSVC model produces a simple linear formula that assigns a weight to each feature, making it easy to see which features help the model make decisions. For this, the regularization setting C=1.0 keeps the model balanced so it doesn’t rely too heavily on any single feature, while dual=False makes the training faster for datasets with many samples, and max_iter=5000 ensures the model has enough time to settle on a stable solution. 
 
-RFECV then uses this model to perform feature selection by repeatedly removing the *single* least important feature (step=1) and checking how well the model performs each time. It evaluates each feature set using 5‑fold stratified cross‑validation, which means the data is split into five parts in a way that preserves the class balance, giving a fair and reliable estimate of accuracy. 'importance_getter' helps the RFECV() function in Python to understand where to find features when they've come in through a pipeline.
+RFECV then uses this model to perform feature selection by repeatedly removing the *single* least important feature (step=1) and checking how well the model performs each time. It evaluates each feature set using 5‑fold stratified cross‑validation, which means the data is split into five parts in a way that preserves the class balance, giving a fair and reliable estimate of accuracy. 'importance_getter' helps the RFECV() function in Python to understand where to find features when they've reached it through a pipeline.
 
-The process chooses the feature set that gives the best accuracy score, and n_jobs=-1 simply means the computer uses all its available processing power to speed up this repeated testing. Together, these steps carefully identify the smallest set of features giving strong predictive performance.
+The process chooses the feature set that gives the best accuracy score, and n_jobs=-1 simply means the computer uses all its available processing power to speed up this repeated testing. Together, these steps carefully identify the smallest set of features that gives strong predictive performance.
+
+Let's specify this in Python: 
 
 ```python
 
@@ -343,8 +357,8 @@ While this will eventually complete, and deliver a nice set of features to use i
 
 We'd need something significantly faster if we were investigating a range of new exercises. Let's reduce max_iter to 2000 to reduce the time LinearSVC has to reach a solution, increase the number of features we remove at a time by RFECV by changing step from 1 to 20, and change our cross-fold stratification from 5 'chunks' to only 2.
 
-This could speed processing significantly, but at the cost of some accuracy in finding the 'ideal' set from our large range of HAR data. 
-We will likely still find predictive features for a model that are the most associated with the class, but this may not be careful enough to distinguish the most predictive of these.  
+This could speed processing significantly, but at the cost of some accuracy in finding the 'ideal' feature set from our large range of HAR data. 
+We will likely still find predictive features for a model that are the most associated with the class, but these faster settings may not be careful enough to distinguish the most predictive of these.  
 
 Let's reset our hyperparameters and re-run our code.
 
@@ -367,24 +381,24 @@ rfecv = RFECV(
 rfecv.fit(X, y)
 
 ```
-This has completed in 15 minutes and has identified that the optimum number of features is 54.
+This has completed in 15 minutes, and has identified that the optimum number of features is 54.
 
 <img width="735" height="396" alt="image" src="https://github.com/user-attachments/assets/bc0821cb-7c03-415a-999e-3c300b6ca802" />
 
-This has still taken a very long time in our context, too long for our purpose to provide real-time technique cues to a new lifter, and we're already sacrifing model accuracy to speed this up. Our expectation would be that around 10-25 features would be predictive, using our first hyperparameter settings.
+This has still taken a very long time in our context, too long for our purpose to provide real-time technique cues to a new lifter, and we're already sacrifing model accuracy to speed this up. If our first attempt had reached completion, we'd expect that around 10-25 features would be predictive, using our first hyperparameter settings.
 
-Interestingly, only 5 of our features remain at the sensor recorded level. 
+Interestingly, using this faster approach, only 5 of our features remain at the sensor recorded level. 
 49 come from our set of calculated vector summaries, very interesting! The vector summaries are capturing most, but not all of the predictive information contained in the original sensor-level data.
 
-We could re-run RFECV on this subset with more granularity as we tried at first, to distinguish further, but this approach is still too time-consuming by this pointfor our purposes.
+We could now re-run RFECV on this subset with more granularity such as we tried at first, to distinguish further, but this approach is still a little too time-consuming by this point for our purposes.
 
 Let's leave the HAR industry approach for more powerful machines, and try a more elegant approach to feature selection.
 Instead of LinearSVC + RFECV, let's try Correlation-Based Feature Selection (CFS). 
 
-We'll create some functions using NumPy in Python to define what we want our CFS to do. 
+We'll create some functions using numpy in Python to define what we want our CFS to do. 
 We'll define 'merit' mathematically in our context, and add features through this algorithm, for as long as they continue to improve merit. 
 
-Then we'll standardise the scaling of all candidate features and output a new dataframe for modelling that contains just the features found by a CFS function.  
+Then we'll standardise the scaling of all candidate features and output a *new* dataframe for modelling that contains the features found by a CFS function.  
 
 # CFS Feature Selection <a name="cfs-title"></a>
 
@@ -459,7 +473,10 @@ class CFSSelector(BaseEstimator, TransformerMixin):
     def transform(self, X):
         return X[:, self.selected_indices_]
 ```
-With the function built, let's standardise our candidate feature set and run it through our CFS process.
+With the function now built, let's standardise our candidate feature set and run it through our CFS process.
+
+First, we standardise our data so that all candidate features are scaled, having their original values mapped to numbers between -1 and 1, with their mean at 0.
+Then, we run our CFS Selector function to apply CFS and choose the most independently predictive features!
 
 ```python
 
@@ -471,7 +488,7 @@ selector = CFSSelector().fit(X_scaled, y)
 selected_features = df.columns[selector.selected_indices_]
 ```
 
-Let's look at our feature set:
+Let's view our resulting feature set:
 
 ```python
 print("Number of selected features:", len(selected_features))
@@ -489,14 +506,14 @@ They are:
 - belt_accel_mag_range
 - roll_forearm_max
 
-Importantly, this was found in only a few seconds!
+Importantly, this was found in just a few seconds!
 
 We've successfully run CFS on the 'training' set, the smaller set of data provided to us by the HAR team. In reality, using their full dataset, the HAR team would find 17 features using CFS, which is in the likely range of features that LinearSCV+RFECV might find if it completed successfully when prioritising discrimination over speed as we initially tried.
 
 The 6 features here are the top subset in the feature space, and we can compare these with the 54 we found using LinearSVC+RFECV.
 Again, vector sumamries are showing to be predictive. Five features are vector summaries (a min, a max, and a few ranges), and one is on the level of the original sensor data (the magnetometer for the arm, in the sideways direction).
 
-Let's build a model data set using our 6 top features...
+Let's build a model data set using our top 6 features...
 
 ```python
 
@@ -528,9 +545,8 @@ CFS has reduced the feature space, and identified some top features to include i
 Let's now build our Random Forest model, following the steps in the code below...
 
 ```python
-###############################################################
-# prepare dataset for ML
-###############################################################
+
+## 1. Prepare dataset for ML
 
 # Re-Shuffle our data for training
 
@@ -538,25 +554,22 @@ df = shuffle(df_selected, random_state = 42)
 
 # Check Class Balance
 
-df["classe"].value_counts(normalize = True) # good class balance
+df["classe"].value_counts(normalize = True)
 
-###############################################################
-# Split Input Variables and Output Variable
-###############################################################
+
+## 2. Split Input Variables and Output Variable
 
 X = df.drop(["classe"], axis = 1)
 y = df["classe"]
 
-###############################################################
-# Split Out Training and Test Sets -
+
+## 3. Split Out Training and Test Sets -
 # ensure stratification is even between classes
-###############################################################
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state = 42, stratify = y)
 
-###############################################################
-# Model Training - train our model
-###############################################################
+
+## 4. Model Training - train our model!
 
 clf = RandomForestClassifier(random_state = 42, n_estimators = 500, max_features = 6)
 clf.fit(X_train, y_train)
@@ -564,13 +577,13 @@ clf.fit(X_train, y_train)
 ```
 
 We've fit a Random Forest model containing 500 decision trees, using just the 6 features selected by CFS from all of the raw sensor data, and our created vector summaries.
-Let's next see its Accuracy in classifying movement on the test set.
+We're now ready to assess its accuracy in classifying movement on the test set of ~3000 sensor snapshots!
 
 # Model Test / Training Accuracy  <a name="modelling-application"></a>
 
 ### Model Performance
 
-Based on the values of our 6 features, each of the 500 decision trees in the Random Forest independently predicts one of the 5 movement classes for every row in the test set. A decision tree chooses thresholds during training by testing many possible split points and selecting the one that most reduces Gini impurity. During prediction, the tree simply compares each feature value to these learned thresholds to decide which branch to follow. Each tree routes the sample down its branches until it reaches a leaf node, and the class stored in that leaf becomes that tree’s ‘vote’. These votes represent the class each tree considers most likely given the feature values it has seen. The Random Forest then counts all votes across the 500 trees, and the class with the most votes becomes the model’s final prediction for each row in the test set. 
+Based on the values of our 6 features, each of the 500 decision trees in the Random Forest independently predicts one of the 5 movement classes for every row in the test set. A decision tree chooses thresholds during training by testing many possible split points and selecting the one that most reduces Gini impurity. During prediction, the tree simply compares each feature value to these learned thresholds to decide which branch to follow. Each tree routes the sample down its branches until it reaches a leaf node, and the class stored in that leaf becomes that tree’s ‘vote’. These votes represent the class each tree considers most likely, given the feature values it has seen. The Random Forest then counts all votes across the 500 trees, and the class with the most votes becomes the model’s final prediction for each row in the test set. 
 
 We output an object y_pred_prob that views the probabilities that each decision tree would arrive at each of the 5 outcomes for each row in the test set. 
 
@@ -603,10 +616,11 @@ accuracy_score(y_test, y_pred_class)
 
 The confusion matrix shows *almost* perfect prediction. The Accuracy of this model is: 0.99898 !
 
-Any model trained on this data could not be meaningfully more accurate than this. A model trained on the full HAR data may be able to get perfect prediction on this test set, which we will see later. 
+Any model trained on this data could not be expected to be meaningfully more accurate than this. A model trained on more of the HAR data could achieve perfect prediction on this test set, which we will see later. 
 
-At this level of accuracy, we'd prefer a model with few features such as this over the LinearSVC+RFECV model that contained 54 features for two reasons:
-1) explainability and 2) run speed, especially since we need good speed in predicting the class of a new lift.
+At this level of accuracy, we'd prefer a model with few features such CFS provides, over the LinearSVC+RFECV model that contained 54 features for two reasons:
+1) explainability and
+2) run speed, especially since we need good speed in predicting the class of a new lift.
 
 
 ### Feature Importance
@@ -668,10 +682,10 @@ plt.tight_layout()
 plt.show()
 ```
 That code gives us the below plots for Feature Importance and Permutation Importance
-
-<img width="703" height="464" alt="image" src="https://github.com/user-attachments/assets/64ee9cb3-6e2e-4506-9dae-1833d3de956c" />.
-
-<img width="713" height="465" alt="image" src="https://github.com/user-attachments/assets/f443c13e-683d-4645-930e-4ef30426de3b" />.
+<br>
+<img width="703" height="464" alt="image" src="https://github.com/user-attachments/assets/64ee9cb3-6e2e-4506-9dae-1833d3de956c" />
+<br>
+<img width="713" height="465" alt="image" src="https://github.com/user-attachments/assets/f443c13e-683d-4645-930e-4ef30426de3b" />
 
 There are slight differences in the order or “importance” for the features but overall they have provided similar findings: 
 
@@ -685,9 +699,9 @@ The most important measures in classifying bicep curl movement class come from t
 
 # Full Set Feature Performance  <a name="fully-featured"></a>
 
-Let's assess how a model containing the full set of features identified using a much larger dataset (also using CFS) would go on the training subset that we received from the HAR team.
+Let's assess how a model containing the full set of features identified using a much larger dataset (also using CFS) would perform on the training subset that we received from the HAR team.
 
-First, let's re-create the 17 features that were reported to be used in the HAR team's RF modelling.
+First, let's re-create the 17 features that were reported to be used in the HAR team's own RF modelling.
 
 ### Recreate features found using CFS in the study <a name="fully-featured-recr"></a>
 ```python
@@ -724,10 +738,8 @@ df = df.drop(features_with_miss, axis=1)
 #### View distribution of observations by num_window
 counts = df.groupby('num_window').size()
 
-#### 17 Features were selected by the paper using the method: ####
+#### 17 Features were selected by the paper using the CFS method: ####
 ## A good feature subset contains features that are highly correlated with the class but uncorrelated with each other. ##
-  
-feat_seln_method_at = "https://ml.cms.waikato.ac.nz/publications/1999/99MH-Thesis.pdf"
 
 # Let's recreate these measures on our training data using standard HAR (Human Activity Recognition) practice #
 
@@ -969,6 +981,7 @@ df['gyros_forearm_mag'] = np.sqrt(
     df['gyros_forearm_y']**2 +
     df['gyros_forearm_z']**2
 )
+
 # maximum:
 df['gyros_forearm_mag_max'] = (
     df.groupby('num_window')['gyros_forearm_mag']
@@ -995,128 +1008,60 @@ print(df.drop(mags, axis=1).columns)
 
 df.drop(mags, axis=1, inplace = True)
 ```
-Next, let's use these in a similar Random Forest model to the one we ran on our own data, and run it on this data.
-Let's keep the number of decision trees comparable to our own model (500)
 
-### Recreate Paper Model <a name="fully-featured-model"></a>
+Next, let's use these in the Random Forest model we built on our own data.
+Let's keep the number of decision trees comparable to our own model: (500)
 
-```python
-# Recreate Paper's Model - A version of it using RF and many more decision trees
+### Recreate Paper's Model <a name="fully-featured-model"></a>
 
-# Import packages
+After CFS was run on the full HAR dataset, we have the following fields as features in the RF model...
 
-import pandas as pd
-import pickle
-import matplotlib.pyplot as plt
-import numpy as np
+<br>
+<br>
 
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.utils import shuffle
-from sklearn.model_selection import train_test_split, cross_val_score, KFold
-from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.inspection import permutation_importance
+| **Variable Names** | **Variable Type** | **Description** |
+|---|---|---|
+| roll_belt_mean | Independent | mean over a the time window of the roll from the belt sensor (roll calculated from accelerometry) |
+| **roll_belt_var** | Independent | variance over a the time window of the roll from the belt sensor (roll calculated from accelerometry) |
+| accel_belt_mag_max | Independent | (accelerometry) maximum acceleration over a time window of the belt sensor |
+| accel_belt_mag_range | Independent | (accelerometry) acceleration range over a time window of the belt sensor |
+| accel_belt_mag_var | Independent | (accelerometry) acceleration variance over a time window of the belt sensor |
+| gyros_belt_mag_var | Independent | (gyrometery) variance of the belt gyro  |
+| magnet_belt_mag_var | Independent | (magnetometry) variance of the belt magnetometer  |
+| accel_arm_mag_var | Independent | (accelerometry) acceleration variance over a time window of the arm sensor  |
+| magnet_arm_mag_max | Independent | (magnetometry) maximum magnetometer reading over a time window of the arm sensor  |
+| **magnet_arm_mag_min** | Independent | (magnetometry) minimum magnetometer reading over a time window of the arm sensor  |
+| accel_dumbbell_mag_max | Independent | (accelerometry) maximum acceleration over a time window of the dumbbell sensor  |
+| **gyros_dumbbell_mag_var** | Independent |  (gyrometry) maximum gyrometer reading over a time window of the dumbbell sensor |
+| **magnet_dumbbell_mag_max** | Independent | (magnetometry) maximum magnetometer reading over a time window of the dumbbell sensor |
+| **magnet_dumbbell_mag_min** | Independent | (magnetometry) minimum magnetometer reading over a time window of the dumbbell sensor |
+| pitch_forearm_sum | Independent | sum over the time window of the pitch from the forearm sensor (pitch calculated from accelerometry) |
+| gyros_forearm_mag_max | Independent | (gyrometry) maximum gyrometer reading over a time window of the forearm sensor |
+| gyros_forearm_mag_min | Independent | (gyrometry) minimum gyrometer reading over a time window of the forearm sensor |
+<br>
 
-###############################################################
-# Import sample data
-###############################################################
-
-# Run 101_Recreate_Paper_Features.py
-
-###############################################################
-# prepare dataset for ML
-###############################################################
-
-# Shuffle and trim data
-
-df = shuffle(df, random_state = 42)
-df = df[features+["classe"]]
-
-# Class Balance
-
-df.["classe"]value_counts(normalize = True) # good class balance
-
-###############################################################
-# Split Input Variables and Output Variable
-###############################################################
-
-X = df.drop(["classe"], axis = 1)
-y = df["classe"]
-
-###############################################################
-# Split Out Training and Test Sets
-###############################################################
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state = 42, stratify = y)
-
-###############################################################
-# Model Training
-###############################################################
-
-clf = RandomForestClassifier(random_state = 42, n_estimators = 500, max_features = 17)
-clf.fit(X_train, y_train)
-
-# Assess model accuracy
-
-y_pred_class = clf.predict(X_test) #default 50%. n of trees, that came to conclusion data point was in the positive/negative class
-y_pred_prob = clf.predict_proba(X_test)[:,1]
-
-# Confusion matrix
-
-conf_matrix = confusion_matrix(y_test, y_pred_class)
-
-plt.style.use('bmh')
-plt.matshow(conf_matrix, cmap = "coolwarm")
-plt.gca().xaxis.tick_bottom()
-plt.title("Confusion Matrix")
-plt.ylabel("Actual Class")
-plt.xlabel("Predicted Class")
-for (i,j), corr_value in np.ndenumerate(conf_matrix):
-    plt.text(j, i, corr_value, ha = "center", va = "center", fontsize = 20)
-plt.show()
-
-accuracy_score(y_test, y_pred_class)
-
-# Feature Importance - based on mean decrease in the gini impurity score
-
-feature_importance = pd.DataFrame(clf.feature_importances_)
-feature_names = pd.DataFrame(X.columns)
-feature_importance_summary = pd.concat([feature_names, feature_importance], axis = 1)
-feature_importance_summary.columns = ["input_variable","feature_importance"]
-feature_importance_summary.sort_values(by = "feature_importance", inplace = True)
-
-plt.barh(feature_importance_summary["input_variable"],feature_importance_summary["feature_importance"])
-plt.title("Feature Importance of Random Forest")
-plt.xlabel("Feature Importance")
-plt.tight_layout()
-plt.show()
-
-# Permutation Importance (generally preferred) - the decrease seen when randomising each specific input variable
-
-result = permutation_importance(clf, X_test, y_test, n_repeats = 10, random_state = 42)
-
-permutation_importance = pd.DataFrame(result["importances_mean"])
-feature_names = pd.DataFrame(X.columns)
-permutation_importance_summary = pd.concat([feature_names, permutation_importance], axis = 1)
-permutation_importance_summary.columns = ["input_variable","permutation_importance"]
-permutation_importance_summary.sort_values(by = "permutation_importance", inplace = True)
-
-plt.barh(permutation_importance_summary["input_variable"],permutation_importance_summary["permutation_importance"])
-plt.title("Permutation Importance of Random Forest")
-plt.xlabel("Permutation Importance")
-plt.tight_layout()
-plt.show()
-```
 <img width="439" height="474" alt="image" src="https://github.com/user-attachments/assets/02e87961-9581-4e16-973f-d69df47d0f6e" />.
-
-<img width="720" height="472" alt="image" src="https://github.com/user-attachments/assets/5a427523-b5ab-4b22-bf8e-af28dabc9632" />.
-
-<img width="733" height="463" alt="image" src="https://github.com/user-attachments/assets/48ee91d7-fb76-4516-b136-a953912358ad" />.
 
 Accuracy: 1.0
 
 This training set has not challenged the model containing 17 features. With 500 Decision Trees, it achieved perfect prediction!
 
+<img width="720" height="472" alt="image" src="https://github.com/user-attachments/assets/5a427523-b5ab-4b22-bf8e-af28dabc9632" />.
+
+<img width="733" height="463" alt="image" src="https://github.com/user-attachments/assets/48ee91d7-fb76-4516-b136-a953912358ad" />.
+
+The features contributing most to prediction, calculated by time window, are:
+
+1. The maximum magnetometer reading of the dumbbell sensor
+2. Variance of the roll from the belt sensor
+3. Variance of the gyrometer reading from the dumbbell sensor
+4. Maximum magnetometer reading from the dumbbell sensor
+5. Minimum magnetometer reading from the dumbbell sensor
+
 # Growth & Next Steps  <a name="growth-next-steps"></a>
 
+Since predictive accuracy was very high - our feature selection and modelling approach could be tested on new subjects performing different types of weighted lifts, to see if this accuracy translates to different movements. Other movements are not necessarily as predictable by differences in position between forearm and body, so repeating CFS and RF on new movement data would be needed, with the algorithms trained and tested on data from the new movement in a similar fashion to our workflow using data specific to biceps curls. 
 
+From a data point of view, further feature engineering could be undertaken and fit to different or more complex movements, with sensor placement designed to capture movement by thinking about pitch and roll ranges and maximums throughout the movement over the collection window - and positioning sensors where these would differ between a correct performance and common errors.
+
+For example, a common exercise is the barbell squat. Sensors might focus collection on the belt and knee to assess pitch and roll differences between correct squat technique and a common error. An inexperienced lifter often pushes hips back, and knees fall inward when fatiguing while using too much weight on the lift - lifting with the back rather than the legs. This creates a particular movement that differs from correct technique when the weight is controlled. In this case, forearm to belt position would be less predictive of the error vs correct technique (or weight selection) than knee and belt position would be. Our CFS and RF approach fit to knee and forearm HAR sensor data has the potential to help to classify these errors in a system in real time.
