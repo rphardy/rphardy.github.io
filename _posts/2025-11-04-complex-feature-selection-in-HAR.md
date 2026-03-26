@@ -568,6 +568,8 @@ Let's next see its Accuracy in classifying movement on the test set.
 
 # Model Test / Training Accuracy  <a name="modelling-application"></a>
 
+### Model Performance
+
 Based on the values of our 6 features, each of the 500 decision trees in the Random Forest independently predicts one of the 5 movement classes for every row in the test set. A decision tree chooses thresholds during training by testing many possible split points and selecting the one that most reduces Gini impurity. During prediction, the tree simply compares each feature value to these learned thresholds to decide which branch to follow. Each tree routes the sample down its branches until it reaches a leaf node, and the class stored in that leaf becomes that tree’s ‘vote’. These votes represent the class each tree considers most likely given the feature values it has seen. The Random Forest then counts all votes across the 500 trees, and the class with the most votes becomes the model’s final prediction for each row in the test set. 
 
 We output an object y_pred_prob that views the probabilities that each decision tree would arrive at each of the 5 outcomes for each row in the test set. 
@@ -595,7 +597,46 @@ for (i,j), corr_value in np.ndenumerate(conf_matrix):
 plt.show()
 
 accuracy_score(y_test, y_pred_class)
+```
 
+<img width="445" height="473" alt="image" src="https://github.com/user-attachments/assets/b1524ed0-95ef-4bbe-a159-026ded60eea0" />
+
+The confusion matrix shows *almost* perfect prediction. The Accuracy of this model is: 0.99898 !
+
+Any model trained on this data could not be meaningfully more accurate than this. A model trained on the full HAR data may be able to get perfect prediction on this test set, which we will see later. 
+
+At this level of accuracy, we'd prefer a model with few features such as this over the LinearSVC+RFECV model that contained 54 features for two reasons:
+1) explainability and 2) run speed, especially since we need good speed in predicting the class of a new lift.
+
+
+### Feature Importance
+Our Random Forest is an ensemble model, made up of 500 Decision Trees, each of which is different due to the randomness of the data being provided, and the random selection of our 6 input variables available at each potential split point.
+
+Because of this, we end up with a powerful and robust model, but because of the random or different nature of all these Decision trees - the model gives us a unique insight into how important each of our input variables are to the overall model.
+
+As we’re using random samples of data, and input variables for each Decision Tree - there are many scenarios where certain input variables are being held back and this enables us a way to compare how accurate the models' predictions are if that variable is or isn’t present.
+
+So, at a high level, in a Random Forest we can measure importance by asking: How much would accuracy decrease if a specific input variable was removed or randomised?
+
+If this decrease in performance, or accuracy, is large, then we’d deem that input variable to be quite important, and if we see only a small decrease in accuracy, then we’d conclude that the variable is of less importance.
+
+At a high level, there are two common ways to tackle this. The first, often just called Feature Importance is where we find all nodes in the Decision Trees of the forest where a particular input variable is used to split the data and assess what the gini impurity score (for a Classification problem) was before the split was made, and compare this to the gini impurity score after the split was made. We can take the average of these improvements across all Decision Trees in the Random Forest to get a score that tells us how much better we’re making the model by using that input variable.
+
+If we do this for each of our input variables, we can compare these scores and understand which is adding the most value to the predictive power of the model!
+
+The other approach, often called Permutation Importance cleverly uses some data that has gone unused at when random samples are selected for each Decision Tree (this stage is called "bootstrap sampling" or "bootstrapping")
+
+These observations that were not randomly selected for each Decision Tree are known as Out of Bag observations and these can be used for testing the accuracy of each particular Decision Tree.
+
+For each Decision Tree, all of the Out of Bag observations are gathered and then passed through. Once all of these observations have been run through the Decision Tree, we obtain a classification accuracy score for these predictions.
+
+In order to understand the importance, we randomise the values within one of the input variables - a process that essentially destroys any relationship that might exist between that input variable and the output variable - and run that updated data through the Decision Tree again, obtaining a second accuracy score. The difference between the original accuracy and the new accuracy gives us a view on how important that particular variable is for predicting the output.
+
+Permutation Importance is often preferred over Feature Importance which can at times inflate the importance of numerical features. Both are useful, and in most cases will give fairly similar results.
+
+Let's put them both in place, and plot the results...
+
+```python
 # Feature Importance - based on mean decrease in the gini impurity score
 
 feature_importance = pd.DataFrame(clf.feature_importances_)
@@ -626,19 +667,15 @@ plt.xlabel("Permutation Importance")
 plt.tight_layout()
 plt.show()
 ```
-<img width="445" height="473" alt="image" src="https://github.com/user-attachments/assets/b1524ed0-95ef-4bbe-a159-026ded60eea0" />
-
-The confusion matrix shows *almost* perfect prediction. The Accuracy of this model is: 0.99898. 
-
-Any model trained on this data could not get meaningfully more accurate than this. A model trained on the full HAR data may be able to get perfect prediction on this test set. 
-At this level of accuracy, we'd prefer a model with few features such as this over, the LinearSVC+RFECV model that contained 54 features. 
-mainly for explainability and run speed, especially since we need good speed in predicting the class of a new lift.
-
-Feature Importance vs Permutation Importance is shown here... 
+That code gives us the below plots for Feature Importance and Permutation Importance
 
 <img width="703" height="464" alt="image" src="https://github.com/user-attachments/assets/64ee9cb3-6e2e-4506-9dae-1833d3de956c" />.
 
 <img width="713" height="465" alt="image" src="https://github.com/user-attachments/assets/f443c13e-683d-4645-930e-4ef30426de3b" />.
+
+There are slight differences in the order or “importance” for the features but overall they have provided similar findings: 
+
+The most important measures in classifying bicep curl movement class come from the belt and forearm: The roll range and acceleration range of the belt, and the maximum roll and minimum pitch of the forearm.  
 
 # Model Accuracy on New Data  <a name="accuracy-summary"></a>
 
