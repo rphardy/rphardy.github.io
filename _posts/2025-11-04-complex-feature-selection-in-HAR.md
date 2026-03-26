@@ -21,9 +21,8 @@ Our client, a Human Activity Recognition (HAR) research team, wants to utilise M
 - [05. CFS Feature Selection](#cfs-title)
 - [06. Model Build](#model-title)
 - [07. Model Test/Training Accuracy](#accuracy-summary)
-- [08. Model Accuracy on New Data](#modelling-application)
-- [09. Full Set Feature Performance](#fully-featured)
-- [10. Growth & Next Steps](#growth-next-steps)
+- [08. Full Set Feature Performance](#fully-featured)
+- [09. Growth & Next Steps](#growth-next-steps)
 
 ___
 
@@ -55,7 +54,7 @@ Of the incorrect lifts, it was split by error type B-E: 19.3% : 18.4% : 17.4% : 
 
 As we are predicting a class in a HAR context, with a dense feature space, we test Random Forest modelling approaches as industry standard. 
 
-For each model, we will import the data in the same way, but will need to pre-process it based upon different strategies to give a feature set to include in our Random Forest algorithm.  We will train & test a model using each feature selection approach, to provide optimal performance, and then measure this predictive performance based on accuracy score and on its ability to successfully classify a new set of 20 observations from 20 new lifters.
+For each model, we will import the data in the same way, but will need to pre-process it based upon different strategies to give a feature set to include in our Random Forest algorithm.  We will train & test a model using each feature selection approach, to provide optimal performance, and then measure this predictive performance based on accuracy score and on its ability to classify a holdout set of approximately 3900 sensor observations.
 
 <br>
 <br>
@@ -79,7 +78,7 @@ The only errors we made training on this set alone compared to the study's more 
 
 A feature selection strategy using industry standard LinearSVC + RFECV selection proved too time-consuming to run, and could not have improved on the modelling results found using the CFS selection strategy as shown. 
 
-Feature and Permutation Importance suggests that the most informative measures in classifying bicep curl movement class come from the belt and forearm: The roll range and acceleration range of the belt, and the maximum roll and minimum pitch of the forearm. This is intuitive, as these measures derived from acceleromtery describe differences in a given time window between the 'start' and 'end' points of the forearm relative to the body in 3D space. 
+Feature and Permutation Importance suggests that the most informative measures in classifying bicep curl movement class come from the belt and forearm: The roll range and acceleration range of the belt, and the maximum roll and minimum pitch of the forearm. This is intuitive, as these measures (derived from both acceleromtery and gyrometry) describe differences in a given time window between the 'start' and 'end' points of the forearm relative to the body in 3D space. 
 
 <br>
 <br>
@@ -202,16 +201,21 @@ There were no missing values in the raw sensor data, as this subset of the study
 
 We had removed any columns containing missing data on data import, and will create new calculated fields using the raw sensor data. 
 Rarely, doing this may create some missing data which will be re-addressed after all fields are ready for feature selection. 
+
 <br>
-##### Summarise variables on axes to vectors
+##### Summarise variables on axes to vectors and group by time window
 
 In the next code block we do four things:
 1. We group our data into vector groups by sensor, then
 2. Calculate their vector magnitudes,
-3. Define the vector statistics that we wish to calculate to use as features in the random forest model along with the grouping we will use to aggregate to these, and
-4. Run our sensor data through this to create these new variables as vector summaries.
+3. Define the summary statistics that we wish to calculate to use as features in the random forest model along with the grouping we will use to aggregate to these, and
+4. Run our sensor data through this to create these new variables at the vector level.
 
-Once we have done this, we can perform feature selection using these summaries as features, which will hopefully contain all sensor information in a reduced feature space.
+Once we have done this, we can perform feature selection using these window summaries as features, which will hopefully contain all sensor information in a reduced feature space.
+
+We need to be careful here. To do this, we are assuming that our testing set will also contain multiple observations from a single time-window. If we were to test on only a few single timepoints, say a holdout set of only 20 observations from different windows and on different subjects, we could not calculate meaningful window summary statistics! Running this pre-processing on such a test set would give near-0 values, and these summaries would not provide any predictive information.
+
+Our test set contains 20% of the data, stratified by class, which gives hundreds of observations from only a few subjects and curl repetitions, so there is likely to be enough data in our test set to produce these summaries there. 
 
 Vector magnitudes are calculated from 3 dimensions (front, sideways, upwards) as:
 
@@ -258,7 +262,7 @@ stats = {
     "sum": "sum"
 }
 
-# Apply to all vector magnitude features + roll, pitch and yaw
+# Apply stats to all vector magnitude features + roll, pitch and yaw
 candidate_cols = [
     col for col in df.columns
     if any(key in col for key in ["roll", "pitch", "yaw", "_mag"])
