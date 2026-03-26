@@ -710,13 +710,6 @@ The most important measures in classifying bicep curl movement class come from t
 
 <br>
 <br>
-# Model Accuracy on New Data  <a name="accuracy-summary"></a>
-
-```python
-#
-```
-
-<br>
 # Full Set Feature Performance  <a name="fully-featured"></a>
 
 Let's assess how a model containing the full set of features identified using a much larger dataset (also using CFS) would perform on the training subset that we received from the HAR team.
