@@ -101,10 +101,10 @@ The key variables hypothesised to predict this will come from the sensor data co
 
 We calculate vector statistics from the repeat sensor collections in windows of different length (0.5 to 2.5 seconds) during the lift. For this training data, a lifter had completed 10 repetitions of a bicep curl exactly according to instructions specified by a weight lifting coach. 
 The coach instructed to lift using a specified technique (Class A), or to perform one of the following errors:
-Error 1: Throw the elbows to the front (Class B)
-Error 2: Lift the dumbbell only halfway (Class C)
-Error 3: Lower the dumbbell only halfway (Class D)
-Error 4: Throw the hips to the front (Class E)
+- Error 1: Throw the elbows to the front (Class B)
+- Error 2: Lift the dumbbell only halfway (Class C)
+- Error 3: Lower the dumbbell only halfway (Class D)
+- Error 4: Throw the hips to the front (Class E)
 
 After some data pre-processing in Python, we have a dataset for modelling that contains the following fields...
 
@@ -201,7 +201,6 @@ There were no missing values in the raw sensor data, as this subset of the study
 We had removed any columns containing missing data on data import, and will create new calculated fields using the raw sensor data. 
 Rarely, doing this may create some missing data which will be re-addressed after all fields are ready for feature selection. 
 
-<br>
 <br>
 ##### Summarise variables on axes to vectors
 
@@ -323,8 +322,9 @@ RFECV then uses this model to perform feature selection by repeatedly removing t
 
 The process chooses the feature set that gives the best accuracy score, and n_jobs=-1 simply means the computer uses all its available processing power to speed up this repeated testing. Together, these steps carefully identify the smallest set of features that gives strong predictive performance.
 
-Let's specify this in Python: 
+Let's specify this in Python and train our model: 
 
+<br>
 ```python
 
 from sklearn.pipeline import Pipeline
@@ -350,7 +350,7 @@ rfecv = RFECV(
 rfecv.fit(X, y)
 
 ```
-
+<br>
 Well, it’s been running for over an hour now on a laptop, and it still hasn’t finished...
 
 While this will eventually complete, and deliver a nice set of features to use in modelling our prediction, it can take over an hour depending on processing speed! We may also run out of RAM before the algorithms can finish. This is reason enough to try something else, so let's end this process and try some new parameters that may speed up the feature selection.
@@ -362,6 +362,7 @@ We will likely still find predictive features for a model that are the most asso
 
 Let's reset our hyperparameters and re-run our code.
 
+<br>
 ```python
 
 estimator = Pipeline([
@@ -381,10 +382,11 @@ rfecv = RFECV(
 rfecv.fit(X, y)
 
 ```
+<br>
 This has completed in 15 minutes, and has identified that the optimum number of features is 54.
-
+<br>
 <img width="735" height="396" alt="image" src="https://github.com/user-attachments/assets/bc0821cb-7c03-415a-999e-3c300b6ca802" />
-
+<br>
 This has still taken a very long time in our context, too long for our purpose to provide real-time technique cues to a new lifter, and we're already sacrifing model accuracy to speed this up. If our first attempt had reached completion, we'd expect that around 10-25 features would be predictive, using our first hyperparameter settings.
 
 Interestingly, using this faster approach, only 5 of our features remain at the sensor recorded level. 
@@ -400,12 +402,14 @@ We'll define 'merit' mathematically in our context, and add features through thi
 
 Then we'll standardise the scaling of all candidate features and output a *new* dataframe for modelling that contains the features found by a CFS function.  
 
+<br>
 # CFS Feature Selection <a name="cfs-title"></a>
 
 Let's build our CFS function. 
 
 This code defines a custom Correlation‑based Feature Selector (CFS) that works directly in scikit‑learn. It searches for a small set of features that are both highly correlated with the target and not strongly correlated with each other. The selector evaluates candidate subsets using the classic CFS “merit” formula, adds features one at a time when they improve the merit score, and stops when no further improvement occurs. After fitting, it stores the indices of the chosen features and the transform method returns a reduced version of the dataset containing only those selected columns.
 
+<br>
 ```python
 
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -473,11 +477,12 @@ class CFSSelector(BaseEstimator, TransformerMixin):
     def transform(self, X):
         return X[:, self.selected_indices_]
 ```
+<br>
 With the function now built, let's standardise our candidate feature set and run it through our CFS process.
 
 First, we standardise our data so that all candidate features are scaled, having their original values mapped to numbers between -1 and 1, with their mean at 0.
 Then, we run our CFS Selector function to apply CFS and choose the most independently predictive features!
-
+<br>
 ```python
 
 scaler = StandardScaler()
@@ -487,18 +492,19 @@ selector = CFSSelector().fit(X_scaled, y)
 
 selected_features = df.columns[selector.selected_indices_]
 ```
-
+<br>
 Let's view our resulting feature set:
-
+<br>
 ```python
 print("Number of selected features:", len(selected_features))
 print("\nSelected features:")
 for f in selected_features:
     print("-", f)
 ```
-
+<br>
 The Number of selected features is (only!): 6
-They are:
+
+These are:
 - roll_belt_range
 - pitch_forearm_min
 - pitch_belt_range
@@ -511,10 +517,10 @@ Importantly, this was found in just a few seconds!
 We've successfully run CFS on the 'training' set, the smaller set of data provided to us by the HAR team. In reality, using their full dataset, the HAR team would find 17 features using CFS, which is in the likely range of features that LinearSCV+RFECV might find if it completed successfully when prioritising discrimination over speed as we initially tried.
 
 The 6 features here are the top subset in the feature space, and we can compare these with the 54 we found using LinearSVC+RFECV.
-Again, vector sumamries are showing to be predictive. Five features are vector summaries (a min, a max, and a few ranges), and one is on the level of the original sensor data (the magnetometer for the arm, in the sideways direction).
+Again, vector summaries of the sensor data are showing as features predicting movement class. Five features are vector summaries (a min, a max, and a few ranges), and one is on the level of the original sensor data (the magnetometer for the arm, in the sideways direction).
 
 Let's build a model data set using our top 6 features...
-
+<br>
 ```python
 
 # Convert selected feature names to a list
@@ -533,13 +539,15 @@ print("\nFinal dataframe shape:", df_selected.shape)
 print(df_selected.head())
 
 ```
-
+<br>
 There we have it. A new dataframe *df_selected* containing the features that are most correlated with classe, that were the least correlated with eachother.
 
 Credit for this approach goes to: Mark A Hall, whose thesis on CFS can be found at: https://ml.cms.waikato.ac.nz/publications/1999/99MH-Thesis.pdf
 
-CFS has reduced the feature space, and identified some top features to include in a class prediction model. We can move on to building a predictor.
+CFS has reduced the feature space, and identified some top features to include in a class prediction model. Let's move on and build a predictor.
 
+<br>
+<br>
 # Model Build  <a name="model-title"></a>
 
 Let's now build our Random Forest model, following the steps in the code below...
@@ -575,12 +583,14 @@ clf = RandomForestClassifier(random_state = 42, n_estimators = 500, max_features
 clf.fit(X_train, y_train)
 
 ```
-
+<br>
 We've fit a Random Forest model containing 500 decision trees, using just the 6 features selected by CFS from all of the raw sensor data, and our created vector summaries.
 We're now ready to assess its accuracy in classifying movement on the test set of ~3000 sensor snapshots!
 
+<br>
+<br>
 # Model Test / Training Accuracy  <a name="modelling-application"></a>
-
+<br>
 ### Model Performance
 
 Based on the values of our 6 features, each of the 500 decision trees in the Random Forest independently predicts one of the 5 movement classes for every row in the test set. A decision tree chooses thresholds during training by testing many possible split points and selecting the one that most reduces Gini impurity. During prediction, the tree simply compares each feature value to these learned thresholds to decide which branch to follow. Each tree routes the sample down its branches until it reaches a leaf node, and the class stored in that leaf becomes that tree’s ‘vote’. These votes represent the class each tree considers most likely, given the feature values it has seen. The Random Forest then counts all votes across the 500 trees, and the class with the most votes becomes the model’s final prediction for each row in the test set. 
@@ -611,18 +621,19 @@ plt.show()
 
 accuracy_score(y_test, y_pred_class)
 ```
-
+<br>
 <img width="445" height="473" alt="image" src="https://github.com/user-attachments/assets/b1524ed0-95ef-4bbe-a159-026ded60eea0" />
-
+<br>
 The confusion matrix shows *almost* perfect prediction. The Accuracy of this model is: 0.99898 !
 
 Any model trained on this data could not be expected to be meaningfully more accurate than this. A model trained on more of the HAR data could achieve perfect prediction on this test set, which we will see later. 
 
-At this level of accuracy, we'd prefer a model with few features such CFS provides, over the LinearSVC+RFECV model that contained 54 features for two reasons:
+At this level of accuracy, we'd prefer a model with few features such as CFS provides, over the LinearSVC+RFECV model that contained 54 features, for two reasons:
+
 1) explainability and
 2) run speed, especially since we need good speed in predicting the class of a new lift.
 
-
+<br>
 ### Feature Importance
 Our Random Forest is an ensemble model, made up of 500 Decision Trees, each of which is different due to the randomness of the data being provided, and the random selection of our 6 input variables available at each potential split point.
 
@@ -681,6 +692,7 @@ plt.xlabel("Permutation Importance")
 plt.tight_layout()
 plt.show()
 ```
+
 That code gives us the below plots for Feature Importance and Permutation Importance
 <br>
 <img width="703" height="464" alt="image" src="https://github.com/user-attachments/assets/64ee9cb3-6e2e-4506-9dae-1833d3de956c" />
@@ -691,18 +703,22 @@ There are slight differences in the order or “importance” for the features b
 
 The most important measures in classifying bicep curl movement class come from the belt and forearm: The roll range and acceleration range of the belt, and the maximum roll and minimum pitch of the forearm.  
 
+<br>
+<br>
 # Model Accuracy on New Data  <a name="accuracy-summary"></a>
 
 ```python
 #
 ```
 
+<br>
 # Full Set Feature Performance  <a name="fully-featured"></a>
 
 Let's assess how a model containing the full set of features identified using a much larger dataset (also using CFS) would perform on the training subset that we received from the HAR team.
 
 First, let's re-create the 17 features that were reported to be used in the HAR team's own RF modelling.
 
+<br>
 ### Recreate features found using CFS in the study <a name="fully-featured-recr"></a>
 ```python
 
@@ -1008,10 +1024,11 @@ print(df.drop(mags, axis=1).columns)
 
 df.drop(mags, axis=1, inplace = True)
 ```
-
+<br>
 Next, let's use these in the Random Forest model we built on our own data.
 Let's keep the number of decision trees comparable to our own model: (500)
 
+<br>
 ### Recreate Paper's Model <a name="fully-featured-model"></a>
 
 After CFS was run on the full HAR dataset, we have the following fields as features in the RF model...
@@ -1041,15 +1058,15 @@ After CFS was run on the full HAR dataset, we have the following fields as featu
 <br>
 
 <img width="439" height="474" alt="image" src="https://github.com/user-attachments/assets/02e87961-9581-4e16-973f-d69df47d0f6e" />.
-
+<br>
 Accuracy: 1.0
 
 This training set has not challenged the model containing 17 features. With 500 Decision Trees, it achieved perfect prediction!
-
+<br>
 <img width="720" height="472" alt="image" src="https://github.com/user-attachments/assets/5a427523-b5ab-4b22-bf8e-af28dabc9632" />.
-
+<br>
 <img width="733" height="463" alt="image" src="https://github.com/user-attachments/assets/48ee91d7-fb76-4516-b136-a953912358ad" />.
-
+<br>
 The features contributing most to prediction, calculated by time window, are:
 
 1. The maximum magnetometer reading of the dumbbell sensor
@@ -1058,6 +1075,8 @@ The features contributing most to prediction, calculated by time window, are:
 4. Maximum magnetometer reading from the dumbbell sensor
 5. Minimum magnetometer reading from the dumbbell sensor
 
+<br>
+<br>
 # Growth & Next Steps  <a name="growth-next-steps"></a>
 
 Since predictive accuracy was very high - our feature selection and modelling approach could be tested on new subjects performing different types of weighted lifts, to see if this accuracy translates to different movements. Other movements are not necessarily as predictable by differences in position between forearm and body, so repeating CFS and RF on new movement data would be needed, with the algorithms trained and tested on data from the new movement in a similar fashion to our workflow using data specific to biceps curls. 
