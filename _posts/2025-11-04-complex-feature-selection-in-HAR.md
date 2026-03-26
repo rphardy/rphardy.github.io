@@ -200,7 +200,6 @@ There were no missing values in the raw sensor data, as this subset of the study
 
 We had removed any columns containing missing data on data import, and will create new calculated fields using the raw sensor data. 
 Rarely, doing this may create some missing data which will be re-addressed after all fields are ready for feature selection. 
-
 <br>
 ##### Summarise variables on axes to vectors
 
