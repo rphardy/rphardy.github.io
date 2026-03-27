@@ -36,7 +36,8 @@ For this, they collected data on six subjects using sensors strapped to their be
 
 The HAR team would like to classify the movement that the next subject does, and provide this as feedback to them quickly, to guide exercise coaching.
 
-Based upon the data they've collected, we will look to understand the *prediction accuracy* of a model built to classify the lift, and test this on a hold out subject as a 'new' lifter, in reality one that has performed their lift earlier under the same conditions. 
+Based upon the data they've collected, we will look to understand the *prediction accuracy* of a model built to classify the lift, and test this on a hold out subject as a 'new' lifter, in reality one that has performed their lifts earlier under the same conditions.
+
 This would provide the HAR team with a model to develop a visual system that can provide new lifters in their lab with technique cues, to quickly improve their movement performance on the exercise. 
 
 The HAR team has access to a much larger set of measures and can train their own models on this data, and they have provided us with access to a small subset of their training data for us to use in our Machine Learning build.
@@ -72,30 +73,17 @@ The goal for the project was to convert sensor data into a useful predictor that
 - Error 3: Lower the dumbbell only halfway (Class D/3)
 - Error 4: Throw the hips to the front (Class E/4)
 
-Our model trained on the data, using 6 features found by Correlation-based Feature Selection (CFS), calculated from this same data, gave an accuracy score of: x %. 
+Our model trained on the data, using 4 features found by Correlation-based Feature Selection (CFS), calculated from this same data, gave an accuracy score of: 50 %. 
 
-A model using 17 features found by CFS calculated from the full research data found... ) 
+A model using 17 features found by CFS calculated from the full research data found relationships between sensor channels and movement, but also gave an accuracy score around 50%. 
 
-The only errors we made training on this set alone compared to the study's more powered model based on a fuller dataset are shown in the off-diagonal cells in the confusion matrix below: a difference of x mis-classifications, but made using 11 fewer features in the Decision Trees in our Random Forest model!
-
-<img width="445" height="473" alt="image" src="https://github.com/user-attachments/assets/b1524ed0-95ef-4bbe-a159-026ded60eea0" /> [update]
-
-A feature selection strategy using industry standard LinearSVC + RFECV selection proved too time-consuming to run, and could not have improved on the modelling results found using the CFS selection strategy as shown. 
-
-Feature and Permutation Importance suggests that the most informative measures in classifying bicep curl movement class come from 
-[the belt and forearm: The roll range and acceleration range of the belt, and the maximum roll and minimum pitch of the forearm. This is intuitive, as these measures (derived from both acceleromtery and gyrometry) describe differences in a given time window between the 'start' and 'end' points of the forearm relative to the body in 3D space.
-
-This was achieved with the caveat that the same subject performing the same movement contributed to both our test set for this feature selection and our training set. So our summary statistics at window level were shared across training and test sets - causing leakage and making them easy to predict. In reality, a better way to have done this would be to have different subjects in each set, or calculate summaries separately, after splitting to train and test.]
+A feature selection strategy using industry standard LinearSVC + RFECV selection proved too time-consuming to run, but may have improved on the modelling results found using the CFS selection strategy as shown. 
 
 <br>
 <br>
 ### Growth/Next Steps <a name="overview-growth"></a>
 
-Our 6‑feature model performed extremely well on biceps‑curl data, but new movements would require repeating the same CFS + Random Forest workflow using data collected specifically for those exercises. 
-
-With more complex lifts, additional feature engineering and thoughtful sensor placement would be needed to capture meaningful pitch/roll differences between correct and incorrect technique. 
-
-For example, in a barbell squat, sensors on the belt and knees — not the forearm — would better distinguish proper form from common errors like knees caving in or excessive hip‑back movement.
+Our 4‑feature model performed poorly on an independent subject, showing that data from 5 subjects is not rich enough to predict movement in a 6th!
 
 <br>
 <br>
@@ -135,7 +123,7 @@ After some data pre-processing in Python, we have a dataset for modelling that c
 
 We will build a model that looks to accurately classify *classe*, based upon the sensor measures listed above.
 
-If that can be achieved, we can use this model to predict movement type for future movements (future weighted bicep curl movements).  This information can be used to provide feedback to a lifter, guiding correct movement technique.
+If that can be achieved, we can use this model to predict movement type for future movements (future weighted bicep curl movements).  This information could be used to provide feedback to a lifter, guiding correct movement technique.
 
 As we are predicting a categorical output using granular data from many inputs in a HAR environment, we use a two step approach: 1) calculate vector statistics from the raw sensor data and 2) pass these onto one of two feature selection approaches:
 
@@ -304,9 +292,7 @@ After calculating the row‑wise mean distance for each subject, 'jeremy' exhibi
 
 Selecting Jeremy as the holdout test subject provides the most stringent and realistic assessment of model generalisation to unseen individuals available in our data. 
 
-This also means that the remaining five subjects form a *comparatively* homogeneous training set! 
-
-This will avoid data leakage into a test set, reduce subject‑specific bias, and improve the stability of feature selection and model fitting.
+This also means that the remaining five subjects form a *comparatively* homogeneous training set. Selecting train/test splits by individual like this will avoid data leakage into the test set, reduce subject‑specific bias, and improve the stability of feature selection and model fitting.
 
 Jeremy is the empirically justified choice for the holdout set because he is the most distributionally unique subject.
 
@@ -323,7 +309,7 @@ OK, let's have a look at our train to test split, using Jeremy as our model test
 | **ALL** | 0.8266 | 0.1734 |
 
 <br>
-The training set exhibits a relatively balanced distribution across the five lift classes, with no single class dominating. In contrast, the test set shows a noticeably different pattern: Jeremy has a substantially higher proportion of class A observations and a lower proportion of class B compared with the pooled training subjects. We saw this in the histogram, and now we know that this has been the deciding factor between Jermey and Adelmo.
+The training set exhibits a relatively balanced distribution across the five lift classes, with no single class dominating. In contrast, the test set shows a noticeably different pattern: Jeremy has a substantially higher proportion of class A observations and a lower proportion of class B compared with the pooled training subjects. We saw this in the histogram, and now we know that this has been the deciding factor between Jeremy and Adelmo.
 
 This imbalance is important because it reflects real‑world deployment conditions: new users often perform movements differently, leading to shifts in class frequencies and sensor signatures. 
 
@@ -354,7 +340,7 @@ In the next code block we do four things:
 3. Define the summary statistics that we wish to calculate to use as features in the random forest model along with the grouping we will use to aggregate to these, and
 4. Run our sensor data through this to create these new variables at the vector level.
 
-Once we have done this, we can perform feature selection using these window summaries as features, which will hopefully contain all sensor information in a reduced feature space.
+Once we have done this, we can perform feature selection using these window summaries as features, which will hopefully contain all predictive sensor information, in a much reduced feature space.
 
 We need to be careful here. To do this, we are assuming that our test set will also contain multiple observations from the same time-window. We know this is the case, as we have split training and testing at the subject level.
 
@@ -371,7 +357,7 @@ Since we’ve separated the data by subject, and each subject has their own uniq
 <br>
 ```python
 
-## Candidate feature engineering - function to create vector magnitudes and summaries for test and train sets independently
+## Candidate feature engineering - A function to create vector magnitudes and summaries for test and train sets independently
 
 def make_features(df, num_window_col="num_window"):
     """
@@ -435,7 +421,7 @@ test_df  = make_features(test_df)
 
 With these summaries available in both sets, we're now ready to select the most predictive of these as our model features!
 
-We'll use just our training set for this, leaving Jeremy's data alone until our model is ready to test.
+We'll use just our training set for this, leaving Jeremy's data aside until our model is ready to test.
 
 <br>
 ##### Feature Selection
@@ -457,7 +443,7 @@ One downside of this approach is the long run-times that LinearSVC can have, as 
 
 ##### CFS
 
-We compare this to an elegant mathematical approach to feature selection called Correlation-Based feature Selection (CFS), which is also used in HAR.
+We compare this to an approach to feature selection called Correlation-Based feature Selection (CFS), which is also used in HAR.
 CFS chooses the smallest set of features that are highly correlated with the class while being minimally correlated with each other. The core of this approach uses the merit function:
 
 $\mathrm{Merit_{\mathnormal{S}}}=\frac{k\cdot \bar {r}_{cf}}{\sqrt{k+k(k-1)\bar {r}_{ff}}}$
@@ -726,7 +712,7 @@ print(test_df_selected.head())
 
 ```
 <br>
-There we have it. Two new dataframes *train_df_selected* containing the features that are most correlated with classe, that were the least correlated with eachother in training, and *test_df_selected*, containing the same features in Jeremy's test data.
+We have created two new dataframes: *train_df_selected* containing the features that are most correlated with classe, that were the least correlated with eachother in training, and *test_df_selected*, containing the same features in Jeremy's test data.
 
 Credit for this approach goes to: Mark A Hall, whose thesis on CFS can be found at: https://ml.cms.waikato.ac.nz/publications/1999/99MH-Thesis.pdf
 
@@ -809,6 +795,10 @@ accuracy_score(y_test, y_pred_class)
 The confusion matrix shows poor prediction. The Accuracy of this model is: 0.5097. 
 
 CFS has reduced the feature space to a point where the model cannot usefully classify a new subject's movements!
+The model overwhelmingly predicts A, B, or C, with classes D and E under‑represented.
+This indicates that the four selected features do not capture the complexity needed to separate the five movement classes for a new subject
+
+The CFS‑4 feature subset produced limited performance on the held‑out subject, with substantial confusion across all five classes. The model tended to collapse predictions into classes A, B, and C, with classes D and E frequently misclassified. 
 
 A model trained on more of the HAR data might achieve better results, still using CFS. 
 
@@ -872,18 +862,22 @@ plt.tight_layout()
 plt.show()
 ```
 
-That code gives us the below plots for Feature Importance and Permutation Importance. Given the poor predictive power of this model, these are not useful in this case.
+That code gives us the below plots for Feature Importance and Permutation Importance.
 
 <br>
 <img width="727" height="408" alt="image" src="https://github.com/user-attachments/assets/1882684d-0d65-4d49-8d3c-e7abbf1c4145" />
 <br>
 <img width="730" height="393" alt="image" src="https://github.com/user-attachments/assets/3a52cf91-2478-4b7c-9aed-906873764687" />
 
+Feature‑importance analysis showed that the model relied heavily on one or two features, particularly arm- and belt‑based magnitude ranges, while permutation importance revealed that pitch‑forearm minima were actually the most essential predictor. This mismatch indicates redundancy and instability within the four‑feature set. 
+
+Overall, while CFS‑4 offers interpretability and compactness, it lacks the representational capacity required for robust subject‑independent classification. Our training data had no hope of predicting an independent lifter's movements, if using CFS feature-selection trained only on our own data.
+
 <br>
 <br>
 # Full Set Feature Performance  <a name="fully-featured"></a>
 
-Let's assess how a model containing the full set of features identified using a much larger dataset (also using CFS) would perform trained on our training subset and tested on Jeremy's data.
+Let's assess how a model containing the full set of features identified using a much larger dataset (also using CFS) would perform if trained on our training subset and tested on Jeremy's data.
 
 First, let's re-create the 17 features that were reported to be used in the HAR team's own RF modelling.
 
@@ -1057,7 +1051,7 @@ Let's keep the number of decision trees comparable to our own model: (500)
 <br>
 ### Recreate Paper's Model <a name="fully-featured-model"></a>
 
-After CFS was run on the full HAR dataset, we have the following fields as features in the RF model...
+After CFS was run on the full HAR dataset, we had the following fields as features in the RF model...
 
 <br>
 <br>
@@ -1082,23 +1076,25 @@ After CFS was run on the full HAR dataset, we have the following fields as featu
 | gyros_forearm_mag_max | Independent | (gyrometry) maximum gyrometer reading over a time window of the forearm sensor |
 | gyros_forearm_mag_min | Independent | (gyrometry) minimum gyrometer reading over a time window of the forearm sensor |
 
+Let's see how it went!
+
 <br>
-<img width="439" height="474" alt="image" src="https://github.com/user-attachments/assets/02e87961-9581-4e16-973f-d69df47d0f6e" />.
+<img width="541" height="594" alt="image" src="https://github.com/user-attachments/assets/f733553b-b74d-496d-8be6-8076cc1b755d" />
 
 <br>
 Accuracy: 0.5032
 
-This training set has not challenged the model containing 17 features. With 500 Decision Trees, it achieved perfect prediction!
 <br>
-<img width="720" height="472" alt="image" src="https://github.com/user-attachments/assets/5a427523-b5ab-4b22-bf8e-af28dabc9632" />.
+<img width="1017" height="544" alt="image" src="https://github.com/user-attachments/assets/65ab6323-364b-4eb2-a223-72bedd84436e" />
+
 <br>
-<img width="733" height="463" alt="image" src="https://github.com/user-attachments/assets/48ee91d7-fb76-4516-b136-a953912358ad" />.
+<img width="1064" height="544" alt="image" src="https://github.com/user-attachments/assets/154246e4-4589-405c-ae91-35aa2e624614" />
 <br>
 
-The Veloso‑17 feature set produced substantially better performance than the CFS‑4 subset, demonstrating that domain‑engineered HAR features capture more generalisable movement structure across subjects. The model classified classes 0, 1, and 4 reasonably well, but struggled with classes 2 and especially 3, which were frequently misclassified as lower‑numbered classes. Feature importance analysis showed a balanced contribution across belt, dumbbell, and forearm features, with roll‑belt variance, forearm gyro maxima, and cumulative forearm pitch emerging as the strongest predictors. Permutation importance confirmed that these features are genuinely essential, while several others contribute only marginally, indicating redundancy and subject‑specific sensitivity. Overall, Veloso‑17 provides a meaningful improvement but still falls short of robust subject‑independent performance.
+The 17-feature set produced substantially better performance than the CFS‑4 subset, demonstrating that domain‑engineered HAR features capture more generalisable movement structure across subjects. The model classified classes A, B, and C reasonably well, but struggled with classes D and especially E, which were frequently misclassified as lower‑numbered classes. Feature importance analysis showed a balanced contribution across belt, dumbbell, and forearm features, with roll‑belt variance, forearm gyro maxima, and cumulative forearm pitch emerging as the strongest predictors. Permutation importance confirmed that these features are genuinely essential, while several others contribute only marginally, indicating redundancy and subject‑specific sensitivity. Overall, CFS‑17 provides a meaningful improvement, but still falls short of robust subject‑independent performance.
 
 <br>
 <br>
 # Growth & Next Steps  <a name="growth-next-steps"></a>
 
-[place]
+Our training set is too small, based on too few movements to generalise effectively to provide feedback in real-time. 
