@@ -77,7 +77,7 @@ Our model trained on the data, using 4 features found by Correlation-based Featu
 
 A model using 17 features found by CFS calculated from the full research data found relationships between sensor channels and movement, but also gave an accuracy score around 50%. 
 
-A feature selection strategy using industry standard LinearSVC + RFECV selection proved too time-consuming to run, but may have improved on the modelling results found using the CFS selection strategy as shown. 
+A feature selection strategy using industry standard LinearSVC + RFECV selection proved too time-consuming to run, but may have improved on the modelling results found using the CFS selection strategy. We did not test the 54 preictor found by a stripped-down LinearSVC + RFECV method. The real issue however, is that there is a hard ceiling that our models have reached, caused by the dataset being too small for the task of between-subject prediction. We need to ask the HAR team for more data! 
 
 <br>
 <br>
@@ -86,10 +86,10 @@ A feature selection strategy using industry standard LinearSVC + RFECV selection
 Our 4‑feature model performed poorly on an independent subject, showing that data from our 5 training subjects is not rich enough to predict movement in a 6th.
 Our HAR team 17-feature model improved on this somewhat, but not meaningfully.
 
-Our data preparation is robust, but our training set is very small, based on too few movements to generalise effectively to provide feedback in real-time using these approaches. There are more rigorous summary statistics than window-level summaries to use - better aligned with the science of HAR, and more powerful models to try.
+Our data preparation is robust, but our training set is very small, based on too few movements to generalise effectively to provide feedback in real-time using these approaches. There may be more rigorous summary statistics than these window-level summaries to use - better aligned with the science of HAR, and more powerful models to try.
 
-A gold-standard HAR model is needed: A Domain-Adversarial Neural Network (DANN) for HAR. 
-We'll next use Copilot to help code this pipeline in our Spyder environment using PyTorch! This, if successfully built, could be expected to dramatically increase between-subject prediction!
+A gold-standard HAR model: A Domain-Adversarial Neural Network (DANN) for HAR however, woud hit the same data ceiling that we have using interpretable features.
+We'll save our models and collect more data for the task!
 
 <br>
 <br>
@@ -1103,6 +1103,5 @@ The 17-feature set produced substantially better performance than the CFS‑4 su
 <br>
 # Growth & Next Steps  <a name="growth-next-steps"></a>
 
-Our training set is very small, based on too few movements to generalise effectively to provide feedback in real-time using these approaches. A gold-standard HAR model is needed: A Domain-Adversarial Neural Network (DANN) for HAR. 
-We'll next use Copilot to help code this pipeline in our Spyder environment using PyTorch! This, if successful, should dramatically increase between subject prediction!
+A feature selection strategy using industry standard LinearSVC + RFECV selection proved too time-consuming to run, but may have improved on the modelling results found using the CFS selection strategy. There is a hard ceiling that our models have reached, caused by the dataset being too small for the task of between-subject prediction. We need to ask the HAR team for more data!
 
