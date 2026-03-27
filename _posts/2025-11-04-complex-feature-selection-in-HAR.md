@@ -36,8 +36,8 @@ For this, they collected data on six subjects using sensors strapped to their be
 
 The HAR team would like to classify the movement that the next subject does, and provide this as feedback to them quickly, to guide exercise coaching.
 
-Based upon the data they've collected, we will look to understand the *prediction accuracy* of a model built to classify the lift, and test this on a hold out set of 'new' lifters that have performed their lifts earlier under the same conditions. 
-This would provide the HAR team with a model to develop a visual system that can provide a new lifter in their lab with technique cues, to quickly improve their movement during exercise. 
+Based upon the data they've collected, we will look to understand the *prediction accuracy* of a model built to classify the lift, and test this on a hold out subject as a 'new' lifter, in reality one that has performed their lift earlier under the same conditions. 
+This would provide the HAR team with a model to develop a visual system that can provide new lifters in their lab with technique cues, to quickly improve their movement performance on the exercise. 
 
 The HAR team has access to a much larger set of measures and can train their own models on this data, and they have provided us with access to a small subset of their training data for us to use in our Machine Learning build.
 
@@ -50,11 +50,15 @@ Let's use Machine Learning to take on this classification task!
 We firstly needed to compile the necessary data from each of the 6 subjects, gathering key sensor data that may help predict *class* of the movement.
 
 Within our dataset from the 6 subjects, we found that 28.4% of sensor data across all collection windows indicated a correct lift (class A), and 71.6% came from incorrect lifts. 
-Of the incorrect lifts, it was split by error type B-E: 19.3% : 18.4% : 17.4% : 16.4%. This tells us that while the data isn't perfectly balanced at 20:20:20:20:20 across lift class, it isn't *too* imbalanced either.
+Of the incorrect lifts, it was split by error type B-E: 19.3% : 18.4% : 17.4% : 16.4%. This tells us that while the data isn't perfectly balanced at 20:20:20:20:20 across lift class, it isn't *too* imbalanced either. Interestingly, 2 subjects contribute to the high proportion of class A in our full data.
 
-As we are predicting a class in a HAR context, with a dense feature space, we test Random Forest modelling approaches as industry standard. 
+For this project, we need to split our training and testing data in a way that avoids 'data leakage' between test and training sets. Typically, we'd use an 80:20 (train:test) split using all clean candidate data, but to avoid data leakage in this case, we'll need to take an entire subject's data out of the training set. This is because we want to use summaries across time-windows as features in our models. If we were to split all of our data after calculating these, we would artifically increase the prediction accuracy of all models, because we'd have pre-calculated summary statistics simply predicting themselves across the train:test split.  We have just 6 subjects, so we reassess the class breakdown by subject and select a suitable holdout that will stress-test our models most.
+ 
+We use the 5 subjects with the most balanced classes to train our model, and the 6th as a test case. This provides the greatest challenge to the model and closest approximation possible to testing our model on a new case. Statistically, the subject with the largest average L1 distance from the others is the ideal holdout.
 
-For each model, we will import the data in the same way, but will need to pre-process it based upon different strategies to give a feature set to include in our Random Forest algorithm.  We will train & test a model using each feature selection approach, to provide optimal performance, and then measure this predictive performance based on accuracy score and on its ability to classify a holdout set of approximately 3900 sensor observations.
+As we are predicting a class in a HAR context, with a dense feature space, we'll test Random Forest modelling approaches as per industry standard. 
+
+For each model, we will import the data in the same way, but will need to pre-process it based upon different strategies that give feature sets to our Random Forest algorithm.  We will train & test a model using each feature selection approach, to provide optimal performance, and then measure this predictive performance based on accuracy score in classifying the lift of the hold-out subject that was most different to the training subjects.
 
 <br>
 <br>
@@ -68,19 +72,20 @@ The goal for the project was to convert sensor data into a useful predictor that
 - Error 3: Lower the dumbbell only halfway (Class D/3)
 - Error 4: Throw the hips to the front (Class E/4)
 
-Our model trained on the data, using 6 features found by Correlation-based Feature Selection (CFS), calculated from this same data, gave an accuracy score of: 99.9 %. An *almost* perfect prediction result.
+Our model trained on the data, using 6 features found by Correlation-based Feature Selection (CFS), calculated from this same data, gave an accuracy score of: x %. 
 
-(A model using 17 features found by CFS calculated from the full research data found this subset too simple for it, at an accuracy score of 100%.) 
+A model using 17 features found by CFS calculated from the full research data found... ) 
 
-The only errors we made training on this set alone compared to the study's more powered model based on a fuller dataset are shown in the off-diagonal cells in the confusion matrix below: a difference of just 4 mis-classifications, but made using 11 fewer features in the Decision Trees in our Random Forest model!
+The only errors we made training on this set alone compared to the study's more powered model based on a fuller dataset are shown in the off-diagonal cells in the confusion matrix below: a difference of x mis-classifications, but made using 11 fewer features in the Decision Trees in our Random Forest model!
 
-<img width="445" height="473" alt="image" src="https://github.com/user-attachments/assets/b1524ed0-95ef-4bbe-a159-026ded60eea0" />
+<img width="445" height="473" alt="image" src="https://github.com/user-attachments/assets/b1524ed0-95ef-4bbe-a159-026ded60eea0" /> [update]
 
 A feature selection strategy using industry standard LinearSVC + RFECV selection proved too time-consuming to run, and could not have improved on the modelling results found using the CFS selection strategy as shown. 
 
-Feature and Permutation Importance suggests that the most informative measures in classifying bicep curl movement class come from the belt and forearm: The roll range and acceleration range of the belt, and the maximum roll and minimum pitch of the forearm. This is intuitive, as these measures (derived from both acceleromtery and gyrometry) describe differences in a given time window between the 'start' and 'end' points of the forearm relative to the body in 3D space. 
+Feature and Permutation Importance suggests that the most informative measures in classifying bicep curl movement class come from 
+[the belt and forearm: The roll range and acceleration range of the belt, and the maximum roll and minimum pitch of the forearm. This is intuitive, as these measures (derived from both acceleromtery and gyrometry) describe differences in a given time window between the 'start' and 'end' points of the forearm relative to the body in 3D space.
 
-This was achieved with the caveat that the same subject performing the same movement contributed to both our test set for this feature selection and our training set. So our summary statistics at window level were shared across training and test sets - causing leakage and making them easy to predict. In reality, a better way to have done this would be to have different subjects in each set, or calculate summaries separately, after splitting to train and test.
+This was achieved with the caveat that the same subject performing the same movement contributed to both our test set for this feature selection and our training set. So our summary statistics at window level were shared across training and test sets - causing leakage and making them easy to predict. In reality, a better way to have done this would be to have different subjects in each set, or calculate summaries separately, after splitting to train and test.]
 
 <br>
 <br>
@@ -142,9 +147,10 @@ From there, we include the identified features in a Random Forest model consisti
 <br>
 # Vector and Window Calculations <a name="veccalc-title"></a>
 
-We utilise the numpy and pandas libraries within Python to compute vector magnitudes for all sensors. The code sections below are broken up into 2 key sections:
+We utilise the numpy and pandas libraries within Python to compute vector magnitudes for all sensors. The code sections below are broken up into 3 key sections:
 
 * Data Import
+* Test and Training Split by subject
 * Data Preprocessing - vector calculations, window-level statistics.
 
 <br>
@@ -158,35 +164,161 @@ We also investigate the class balance of our dependent variable - which is impor
 
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
+# import data
 df = pd.read_csv("data/pml_training.csv")
 
-# Drop non-sensor metadata
-df = df.drop([
-    "Unnamed: 0",
-    "user_name",
-    "raw_timestamp_part_1",
-    "raw_timestamp_part_2",
-    "new_window"
-], axis=1)
+# drop unnecessary columns - keeping subject name to split our test/train by subject.
 
-# Remove columns with too many missing values (>=20): this removes all variables in raw data that were wiped previously. This leaves just the complete sensor and time-window data.
+df.drop(["Unnamed: 0",
+         "raw_timestamp_part_1", 
+         "raw_timestamp_part_2",
+         "cvtd_timestamp",
+         "new_window"], axis = 1, inplace = True)
 
-missing_counts = df.isna().sum()
-df = df.loc[:, missing_counts < 20]
+# Missingness is by column: calculated values are deleted from this set. 
+# Count up missing values in each column
 
-# Keep only numeric columns: keeps all sensor data
-df = df.select_dtypes(include=[np.number])
+missing_counts = {col: df[col].isna().sum() for col in df.columns}
 
-# Target: sets outcome variable
-y = pd.read_csv("data/pml_training.csv")["classe"]
+# View the dictionary
+missing_counts
+# In the data, we have complete data for a subset of columns (55), and missing data <= 20 obs for the remainder (100).
 
-# Class
-y.value_counts(normalize = True)
+# Drop all columns with missing values above 20
+features_with_miss = [col for col, count in missing_counts.items() if count >= 20]
+df = df.drop(features_with_miss, axis=1)
+
+df["classe"].value_counts(normalize=True).mul(100).round(2)
+
 ```
 
 <br>
-From the last step in the above code, we see that **28% of movements were class A and 72% were an error class B-E: 19.3%, 18.4%, 17.4%, 16.4%, respectively**.  This tells us that while the data isn't perfectly balanced at 20:20:20:20:20, it isn't *too* imbalanced either.
+From the last step in the above code, we see that **28.4% of movements were class A and 72% were an error class B-E: 19.3%, 18.4%, 17.4%, 16.4%, respectively**.  This tells us that while the data isn't perfectly balanced at 20:20:20:20:20, it isn't *too* imbalanced either.
+
+Since we'll be identifying a suitable holdout subject by class proportion, let's view this by subject.
+
+<br>
+### Test and Training Split by Subject <a name="veccalc-split"></a>
+
+Since all data came from 6 subjects, and we want to use one as our test case, let's assess the breakdown by subject name and compute class proportions per subject.
+
+```python
+class_props = (
+    df.groupby("user_name")["classe"]
+      .value_counts(normalize=True)
+      .unstack(fill_value=0)
+)
+```
+We get the proportions:
+<br>
+
+| **classe** | **A** | **B** | **C** | **D** | **E** |
+|---|---|---|---|---|---|
+| **adelmo**   | 0.2993 | 0.1994 | 0.1927 | 0.1323 | 0.1763 |
+| **carlitos** | 0.2680 | 0.2217 | 0.1584 | 0.1562 | 0.1957 |
+| **charles**  | 0.2542 | 0.2107 | 0.1524 | 0.1816 | 0.2011 |
+| **eurico**   | 0.2818 | 0.1928 | 0.1593 | 0.1896 | 0.1765 |
+| **jeremy**   | 0.3460 | 0.1437 | 0.1917 | 0.1534 | 0.1652 |
+| **pedro**    | 0.2452 | 0.1935 | 0.1912 | 0.1797 | 0.1904 |
+
+<br>
+Let's visualise the counts that give these proportions:
+
+```py
+
+# Plot histograms of class counts per subject
+
+subjects = df["user_name"].unique()
+fig, axes = plt.subplots(2, 3, figsize=(14, 8), sharex=True, sharey=True)
+axes = axes.flatten()
+
+for ax, subject in zip(axes, subjects):
+    subset = df[df["user_name"] == subject]
+    ax.hist(subset["classe"], bins=5, edgecolor="black")
+    ax.set_title(f"Subject: {subject}")
+    ax.set_xlabel("Classe")
+    ax.set_ylabel("Count")
+
+plt.tight_layout()
+plt.show()
+```
+
+That code gives the plot:
+
+<img width="726" height="414" alt="image" src="https://github.com/user-attachments/assets/b5f7eaca-8d29-4493-bba1-1ec3fa758459" />
+
+We can see that the subjects in the right-hand column are contributing most to our class discrepancy at the total level, but in general, these classes are fairly well balanced. Let's now find the least balanced subject from these to use as our modelling test subject!
+
+We can do this using an'L1 distance' matrix that can tell us the mean distance across all classes, between subjects. The L1 distance is a statistical measure that can tell us **vector-level** differences - here taking into account *all* classes for a subject - and comparing this to all classes for another subject. We can then select the subject with the highest mean L1 distance, as an emprically supported choice for 'most different' subject, to hold out as our test subject. The selected subject will be the one in our data that will be most different from our training set, and therefore most likely to be representative of a **new** subject doing the same experiment in the future. 
+
+Let's compute the subject-wise L1 distance matrix.
+
+```py
+
+distance_matrix = class_props.apply(
+    lambda row: np.abs(class_props.sub(row)).sum(axis=1),
+    axis=1
+)
+```
+We'll next need to get the mean across each row and add it to the matrix.
+
+```py
+distance_matrix["mean_distance"] = distance_matrix.mean(axis=1)
+```
+Let's bring this up:
+
+<br>
+| **user_name** | **adelmo** | **carlitos** | **charles** | **eurico** | **jeremy** | **pedro** | **mean_distance** |
+|---|---|---|---|---|---|---|---|
+| **adelmo**   | 0.0000 | 0.1312 | 0.1707 | 0.1151 | 0.1355 | 0.1231 | 0.1126 |
+| **carlitos** | 0.1312 | 0.0000 | 0.0615 | 0.0961 | 0.2224 | 0.1126 | 0.1040 |
+| **charles**  | 0.1707 | 0.0615 | 0.0000 | 0.0848 | 0.2619 | 0.0775 | 0.1094 |
+| **eurico**   | 0.1151 | 0.0961 | 0.0848 | 0.0000 | 0.1932 | 0.0929 | 0.0970 |
+| **jeremy**   | 0.1355 | 0.2224 | 0.2619 | 0.1932 | 0.0000 | 0.2025 | 0.1692 |
+| **pedro**    | 0.1231 | 0.1126 | 0.0775 | 0.0929 | 0.2025 | 0.0000 | 0.1014 |
+<br>
+
+and use it to select our most distinct subject:
+
+```py
+
+most_distinct_subject = distance_matrix["mean_distance"].idxmax()
+print("Most distinct subject (ideal holdout):", most_distinct_subject)
+
+```
+Most distinct subject (ideal holdout): jeremy
+
+To ensure realistic evaluation of cross‑subject generalisation in the Human Activity Recognition (HAR) model, we computed a subject‑wise class‑distribution distance matrix using the L1 distance between class‑proportion vectors for each subject. This quantified how different each subject’s class distribution was from every other subject.
+After calculating the row‑wise mean distance for each subject, 'jeremy' exhibited the highest average distributional distance (0.1692), substantially larger than all other subjects (range: 0.0970–0.1126). This indicates that Jeremy’s movement patterns and class proportions are the most distinct in the dataset.
+
+Selecting Jeremy as the holdout test subject provides the most stringent and realistic assessment of model generalisation to unseen individuals. 
+
+This also means that the remaining five subjects form a *comparatively* homogeneous training set! 
+
+This will avoid data leakage into a test set, reduce subject‑specific bias, and improve the stability of feature selection and model fitting.
+
+Jeremy is the empirically justified choice for the holdout set because he is the most distributionally unique subject.
+
+OK, let's have a look at our train test split using Jeremy as our model test subject.
+<br>
+
+| **classe** | **train proportion** | **test proportion** |
+|---|---|---|
+| **A** | 0.2715 | 0.3460 |
+| **B** | 0.2039 | 0.1437 |
+| **C** | 0.1708 | 0.1917 |
+| **D** | 0.1661 | 0.1534 |
+| **E** | 0.1877 | 0.1652 |
+| **ALL** | 0.8266 | 0.1734 |
+
+<br>
+The training set exhibits a relatively balanced distribution across the five lift classes, with no single class dominating. In contrast, the test set shows a noticeably different pattern: Jeremy has a substantially higher proportion of class A observations and a lower proportion of class B compared with the pooled training subjects.
+
+This imbalance is important because it reflects real‑world deployment conditions: new users often perform movements differently, leading to shifts in class frequencies and sensor signatures. We have found the most applicable test/training split.
+
+We also have a nice, approximately 80:20 split in train:test overall, which is a typical breakdown in developing Random Forest models. 
 
 <br>
 ### Data Preprocessing <a name="veccalc-preprocessing"></a>
