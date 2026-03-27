@@ -559,11 +559,9 @@ rfecv.fit(X, y)
 
 <br>
 This has completed in 10 minutes, and has identified that the optimum number of features is 54. We can see this optimum in the next plot:
-<br>
 
 <img width="727" height="389" alt="image" src="https://github.com/user-attachments/assets/2d777b74-3963-4134-bfa6-f9cddaffcf2a" />
 
-<br>
 However, even with the faster settings, RFECV still takes a long time to run on a laptop — too slow for a workflow to support real‑time technique feedback for a new lifter. 
 
 We’ve already relaxed the hyperparameters, which means we’re trading some precision in feature selection for speed. With the original, more thorough settings, we’d expect RFECV to settle on about 10–25 predictive features, which is typical for this kind of HAR data.
