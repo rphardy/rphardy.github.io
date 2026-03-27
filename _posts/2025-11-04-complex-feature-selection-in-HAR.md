@@ -83,7 +83,13 @@ A feature selection strategy using industry standard LinearSVC + RFECV selection
 <br>
 ### Growth/Next Steps <a name="overview-growth"></a>
 
-Our 4‑feature model performed poorly on an independent subject, showing that data from 5 subjects is not rich enough to predict movement in a 6th!
+Our 4‑feature model performed poorly on an independent subject, showing that data from our 5 training subjects is not rich enough to predict movement in a 6th.
+Our HAR team 17-feature model improved on this somewhat, but not meaningfully.
+
+Our data preparation is robust, but our training set is very small, based on too few movements to generalise effectively to provide feedback in real-time using these approaches. There are more rigorous summary statistics than window-level summaries to use - better aligned with the science of HAR, and more powerful models to try.
+
+A gold-standard HAR model is needed: A Domain-Adversarial Neural Network (DANN) for HAR. 
+We'll next use Copilot to help code this pipeline in our Spyder environment using PyTorch! This, if successfully built, could be expected to dramatically increase between-subject prediction!
 
 <br>
 <br>
@@ -1097,4 +1103,6 @@ The 17-feature set produced substantially better performance than the CFS‑4 su
 <br>
 # Growth & Next Steps  <a name="growth-next-steps"></a>
 
-Our training set is too small, based on too few movements to generalise effectively to provide feedback in real-time. 
+Our training set is very small, based on too few movements to generalise effectively to provide feedback in real-time using these approaches. A gold-standard HAR model is needed: A Domain-Adversarial Neural Network (DANN) for HAR. 
+We'll next use Copilot to help code this pipeline in our Spyder environment using PyTorch! This, if successful, should dramatically increase between subject prediction!
+
