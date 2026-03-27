@@ -249,9 +249,13 @@ That code gives the plot:
 
 <img width="726" height="414" alt="image" src="https://github.com/user-attachments/assets/b5f7eaca-8d29-4493-bba1-1ec3fa758459" />
 
-We can see that the subjects in the right-hand column are contributing most to our class discrepancy at the total level, but in general, these classes are fairly well balanced. Let's now find the least balanced subject from these to use as our modelling test subject!
+We can see that the subjects in the right-hand column are contributing most to our class discrepancy at the total level, but in general, these classes are fairly well balanced. Let's now find the least balanced subject from these to use as our modelling test subject! We can see from this plot that it will be either Jeremy, or Adelmo. But we can't tell which it is, just by looking.
 
-We can do this using an'L1 distance' matrix that can tell us the mean distance across all classes, between subjects. The L1 distance is a statistical measure that can tell us **vector-level** differences - here taking into account *all* classes for a subject - and comparing this to all classes for another subject. We can then select the subject with the highest mean L1 distance, as an emprically supported choice for 'most different' subject, to hold out as our test subject. The selected subject will be the one in our data that will be most different from our training set, and therefore most likely to be representative of a **new** subject doing the same experiment in the future. 
+We can find out using an 'L1 distance' matrix which can then tell us the mean distance across all classes, between subjects. 
+
+The L1 distance is a statistical measure that can tell us **vector-level** differences - here taking into account *all* classes for a subject - and comparing this to all classes for another subject. 
+
+We can then select the subject with the highest mean L1 distance, as an emprically supported choice for 'most different' subject, to hold out as our test subject. The selected subject will be the one in our data that will be most different from our training set, and therefore most likely to represent a **new** subject performing the same movement. 
 
 Let's compute the subject-wise L1 distance matrix.
 
@@ -262,14 +266,15 @@ distance_matrix = class_props.apply(
     axis=1
 )
 ```
-We'll next need to get the mean across each row and add it to the matrix.
+We'll calculate the mean subject-subject class differences for each row and add this to the table.
 
 ```py
 distance_matrix["mean_distance"] = distance_matrix.mean(axis=1)
 ```
-Let's bring this up:
 
+Let's see the output:
 <br>
+
 | **user_name** | **adelmo** | **carlitos** | **charles** | **eurico** | **jeremy** | **pedro** | **mean_distance** |
 |---|---|---|---|---|---|---|---|
 | **adelmo**   | 0.0000 | 0.1312 | 0.1707 | 0.1151 | 0.1355 | 0.1231 | 0.1126 |
@@ -278,6 +283,7 @@ Let's bring this up:
 | **eurico**   | 0.1151 | 0.0961 | 0.0848 | 0.0000 | 0.1932 | 0.0929 | 0.0970 |
 | **jeremy**   | 0.1355 | 0.2224 | 0.2619 | 0.1932 | 0.0000 | 0.2025 | 0.1692 |
 | **pedro**    | 0.1231 | 0.1126 | 0.0775 | 0.0929 | 0.2025 | 0.0000 | 0.1014 |
+
 <br>
 
 and use it to select our most distinct subject:
@@ -288,12 +294,13 @@ most_distinct_subject = distance_matrix["mean_distance"].idxmax()
 print("Most distinct subject (ideal holdout):", most_distinct_subject)
 
 ```
-Most distinct subject (ideal holdout): jeremy
 
-To ensure realistic evaluation of cross‑subject generalisation in the Human Activity Recognition (HAR) model, we computed a subject‑wise class‑distribution distance matrix using the L1 distance between class‑proportion vectors for each subject. This quantified how different each subject’s class distribution was from every other subject.
-After calculating the row‑wise mean distance for each subject, 'jeremy' exhibited the highest average distributional distance (0.1692), substantially larger than all other subjects (range: 0.0970–0.1126). This indicates that Jeremy’s movement patterns and class proportions are the most distinct in the dataset.
+Our most distinct subject is: jeremy!
 
-Selecting Jeremy as the holdout test subject provides the most stringent and realistic assessment of model generalisation to unseen individuals. 
+Let's recap. To ensure realistic evaluation of cross‑subject generalisation in the Human Activity Recognition (HAR) model, we computed a subject‑wise class‑distribution distance matrix using the L1 distance between class‑proportion vectors for each subject. This quantified how different each subject’s class distribution was from every other subject.
+After calculating the row‑wise mean distance for each subject, 'jeremy' exhibited the highest average distributional distance (0.1692), substantially larger than all other subjects (range: 0.0970–0.1126). This indicates that Jeremy’s movement patterns and class proportions are, on average, the most distinct in the dataset.
+
+Selecting Jeremy as the holdout test subject provides the most stringent and realistic assessment of model generalisation to unseen individuals available in our data. 
 
 This also means that the remaining five subjects form a *comparatively* homogeneous training set! 
 
@@ -301,7 +308,7 @@ This will avoid data leakage into a test set, reduce subject‑specific bias, an
 
 Jeremy is the empirically justified choice for the holdout set because he is the most distributionally unique subject.
 
-OK, let's have a look at our train test split using Jeremy as our model test subject.
+OK, let's have a look at our train to test split, using Jeremy as our model test subject.
 <br>
 
 | **classe** | **train proportion** | **test proportion** |
@@ -314,11 +321,11 @@ OK, let's have a look at our train test split using Jeremy as our model test sub
 | **ALL** | 0.8266 | 0.1734 |
 
 <br>
-The training set exhibits a relatively balanced distribution across the five lift classes, with no single class dominating. In contrast, the test set shows a noticeably different pattern: Jeremy has a substantially higher proportion of class A observations and a lower proportion of class B compared with the pooled training subjects.
+The training set exhibits a relatively balanced distribution across the five lift classes, with no single class dominating. In contrast, the test set shows a noticeably different pattern: Jeremy has a substantially higher proportion of class A observations and a lower proportion of class B compared with the pooled training subjects. We saw this in the histogram, and now we know that this has been the deciding factor between Jermey and Adelmo.
 
-This imbalance is important because it reflects real‑world deployment conditions: new users often perform movements differently, leading to shifts in class frequencies and sensor signatures. We have found the most applicable test/training split.
+This imbalance is important because it reflects real‑world deployment conditions: new users often perform movements differently, leading to shifts in class frequencies and sensor signatures. 
 
-We also have a nice, approximately 80:20 split in train:test overall, which is a typical breakdown in developing Random Forest models. 
+Ok, we have found the test/training split. We also have a nice, approximately 80:20 split in train:test sets overall, close to a typical breakdown for developing Random Forest models. 
 
 <br>
 ### Data Preprocessing <a name="veccalc-preprocessing"></a>
@@ -334,7 +341,7 @@ For 3D Sensor data, we have certain data preprocessing steps that need to be add
 There were no missing values in the raw sensor data, as this subset of the study data had been pre-cleaned. So we will just move on to the next step.
 
 We had removed any columns containing missing data on data import, and will create new calculated fields using the raw sensor data. 
-Rarely, doing this may create some missing data which will be re-addressed after all fields are ready for feature selection. 
+Rarely, doing this may *create* some missing data which will be re-addressed after all fields are ready for feature selection. 
 
 <br>
 ##### Summarise variables on axes to vectors and group by time window
@@ -347,70 +354,86 @@ In the next code block we do four things:
 
 Once we have done this, we can perform feature selection using these window summaries as features, which will hopefully contain all sensor information in a reduced feature space.
 
-We need to be careful here. To do this, we are assuming that our testing set will also contain multiple observations from a single time-window. If we were to test on only a few single timepoints, say a hold-out set of only 20 observations from different windows and on different subjects, we could not calculate meaningful window summary statistics! Attempting to run this pre-processing on such a test set would give near-0 values for statistical summaries, and these summaries would not provide any predictive information. 
+We need to be careful here. To do this, we are assuming that our test set will also contain multiple observations from the same time-window. We know this is the case, as we have split training and testing at the subject level.
 
-Our test set contains 20% of the data, stratified by class, which gives hundreds of observations from only a few subjects and curl repetitions, so there is likely to be enough data in our test set to produce these summaries there. 
+Our test set contains 20% of the data, stratified by class, which gives hundreds of observations from only a few subjects and curl repetitions, so there is likely to be enough data in our test set to produce these summaries here. 
 
 Vector magnitudes are calculated from 3 dimensions (front, sideways, upwards) as:
 
 $$\mathrm{magnitude}=\sqrt{x^2+y^2+z^2}$$
 
-Let's do this using the numpy and pandas libraries in Python:
+Let's create time-window level summaries using the numpy and pandas libraries in Python. We'll create time-window means, variances, maximums and minimums, ranges, and totals, using vector magnitudes for the 3D accelerometer, magnetometer and gyrometer data.
+
+Since we’ve separated the data by subject, and each subject has their own unique num_window sequence, we compute the window‑level summary features separately within the training and test sets. The calculations are done by num_window only — we don’t need to consider which subject the windows came from. 
 
 <br>
 ```python
 
-# Group to create vector magnitudes for all sensors
-sensor_groups = {
-    "belt_accel": ["accel_belt_x", "accel_belt_y", "accel_belt_z"],
-    "belt_gyro":  ["gyros_belt_x", "gyros_belt_y", "gyros_belt_z"],
-    "belt_mag":   ["magnet_belt_x", "magnet_belt_y", "magnet_belt_z"],
+## Candidate feature engineering - function to create vector magnitudes and summaries for test and train sets independently
 
-    "arm_accel":  ["accel_arm_x", "accel_arm_y", "accel_arm_z"],
-    "arm_mag":    ["magnet_arm_x", "magnet_arm_y", "magnet_arm_z"],
+def make_features(df, num_window_col="num_window"):
+    """
+    Compute vector magnitudes and window-level summary statistics.
+    Applies the same feature engineering to any input DataFrame.
+    """
 
-    "dumb_accel": ["accel_dumbbell_x", "accel_dumbbell_y", "accel_dumbbell_z"],
-    "dumb_gyro":  ["gyros_dumbbell_x", "gyros_dumbbell_y", "gyros_dumbbell_z"],
-    "dumb_mag":   ["magnet_dumbbell_x", "magnet_dumbbell_y", "magnet_dumbbell_z"],
+    # --- 1. Vector magnitude definitions ---
+    sensor_groups = {
+        "belt_accel": ["accel_belt_x", "accel_belt_y", "accel_belt_z"],
+        "belt_gyro":  ["gyros_belt_x", "gyros_belt_y", "gyros_belt_z"],
+        "belt_mag":   ["magnet_belt_x", "magnet_belt_y", "magnet_belt_z"],
 
-    "fore_gyro":  ["gyros_forearm_x", "gyros_forearm_y", "gyros_forearm_z"],
-    "fore_mag":   ["magnet_forearm_x", "magnet_forearm_y", "magnet_forearm_z"],
-}
+        "arm_accel":  ["accel_arm_x", "accel_arm_y", "accel_arm_z"],
+        "arm_mag":    ["magnet_arm_x", "magnet_arm_y", "magnet_arm_z"],
 
-# Calculate vector magnitudes for all sensors
-for name, cols in sensor_groups.items():
-    df[f"{name}_mag"] = np.sqrt((df[cols]**2).sum(axis=1))
+        "dumb_accel": ["accel_dumbbell_x", "accel_dumbbell_y", "accel_dumbbell_z"],
+        "dumb_gyro":  ["gyros_dumbbell_x", "gyros_dumbbell_y", "gyros_dumbbell_z"],
+        "dumb_mag":   ["magnet_dumbbell_x", "magnet_dumbbell_y", "magnet_dumbbell_z"],
 
-# Window grouping variable
-num_window = pd.read_csv("data/pml_training.csv")["num_window"]
+        "fore_gyro":  ["gyros_forearm_x", "gyros_forearm_y", "gyros_forearm_z"],
+        "fore_mag":   ["magnet_forearm_x", "magnet_forearm_y", "magnet_forearm_z"],
+    }
 
-df["num_window"] = num_window
+    # --- 2. Compute vector magnitudes ---
+    for name, cols in sensor_groups.items():
+        df[f"{name}_mag"] = np.sqrt((df[cols]**2).sum(axis=1))
 
-# Functions to compute
-stats = {
-    "mean": "mean",
-    "var": "var",
-    "max": "max",
-    "min": "min",
-    "range": lambda s: s.max() - s.min(),
-    "sum": "sum"
-}
+    # --- 3. Summary statistics to compute ---
+    stats = {
+        "mean": "mean",
+        "var": "var",
+        "max": "max",
+        "min": "min",
+        "range": lambda s: s.max() - s.min(),
+        "sum": "sum"
+    }
 
-# Apply stats to all vector magnitude features + roll, pitch and yaw
-candidate_cols = [
-    col for col in df.columns
-    if any(key in col for key in ["roll", "pitch", "yaw", "_mag"])
-]
+    # --- 4. Identify columns to summarise ---
+    candidate_cols = [
+        col for col in df.columns
+        if any(key in col for key in ["roll", "pitch", "yaw", "_mag"])
+    ]
 
-for col in candidate_cols:
-    for stat_name, func in stats.items():
-        df[f"{col}_{stat_name}"] = df.groupby("num_window")[col].transform(func)
+    # --- 5. Compute window-level summaries ---
+    for col in candidate_cols:
+        for stat_name, func in stats.items():
+            df[f"{col}_{stat_name}"] = (
+                df.groupby(num_window_col)[col].transform(func)
+            )
 
-# drop the grouping variable as it is no longer needed and should not be a feature
+    # --- 6. Drop window ID (not a feature) ---
+    df = df.drop(columns=[num_window_col])
 
-df = df.drop(columns=["num_window"])
+    return df
+
+train_df = make_features(train_df)
+test_df  = make_features(test_df)
 
 ```
+
+With these summaries available in both sets, we're now ready to select the most predictive of these as our model features!
+
+We'll use just our training set for this, leaving Jeremy's data alone until our model is ready to test.
 
 <br>
 ##### Feature Selection
@@ -423,9 +446,14 @@ Feature Selection is the process used to select the input variables that are mos
 
 There are many, many ways to apply Feature Selection.  These range from simple methods such as a *Correlation Matrix* showing variable relationships, to *Univariate Testing* which helps us understand statistical relationships between variables, and then to even more powerful approaches like *Recursive Feature Elimination (RFE)* which is an approach that starts with all input variables, and then iteratively removes those with the weakest relationships with the output variable.
 
-We attempt an industry standard variation of Recursive Feature Elimination called *Recursive Feature Elimination With Cross Validation (RFECV)* using a *Linear Support Vector Classifier* where we split the data into many "chunks" and iteratively train & validate models on each "chunk" separately.  This means that each time we assess different models with different variables included, or eliminated, the algorithm also knows how accurate each of those models was.  LinearSVC learns a linear decision boundary that distinguishes the five exercise movement classes using the accelerometer, gyroscope, and magnetometer features, combined with our calculated vector statistics features.
+##### RFECV using LinearSVC
+
+We attempt an industry standard variation of Recursive Feature Elimination called *Recursive Feature Elimination With Cross Validation (RFECV)* using a *Linear Support Vector Classifier* where we split the data into many "chunks" and iteratively train & validate these linear classifer models on each "chunk" separately.  This means that each time we assess different models with different variables included, or eliminated, the algorithm also knows how accurate each of those models was.  LinearSVC learns a linear decision boundary that distinguishes the five exercise movement classes using the accelerometer, gyroscope, and magnetometer features, combined with our calculated vector and summary statistics features.
+
 RFECV then uses the model’s coefficients to identify which of all of these features truly contribute to class separation and recursively removes the weakest ones.
 One downside of this approach is the long run-times that LinearSVC can have, as we'll see!
+
+##### CFS
 
 We compare this to an elegant mathematical approach to feature selection called Correlation-Based feature Selection (CFS), which is also used in HAR.
 CFS chooses the smallest set of features that are highly correlated with the class while being minimally correlated with each other. The core of this approach uses the merit function:
@@ -434,9 +462,9 @@ $\mathrm{Merit_{\mathnormal{S}}}=\frac{k\cdot \bar {r}_{cf}}{\sqrt{k+k(k-1)\bar 
 
 Multicollinearity will occur when two or more input variables are *highly* correlated with each other, it is a scenario we attempt to avoid as in short, while it won't necessarily affect the predictive accuracy of our model, it can make it difficult to trust the statistics that describe how well the model is performing, and how much effect each input variable is truly having. CFS does a good job of reducing multicollinearity since it assigns more merit (as defined above) to features that are not correlated.
 
-We'll code this approach in Python and see how it works out in our model predictions!
+We'll code the CFS approach in Python and see how it works out in our model predictions!
 
-Let's first attempt an industry standard approach to feature selection in HAR tasks and see how far we get.
+Let's first attempt the industry standard approach to feature selection in HAR tasks and see how far we get.
 
 <br>
 # LinearSVC + RFECV <a name="linSVCRFECV-title"></a>
@@ -447,11 +475,11 @@ The code section below continues with our prepared dataframe containing the suit
 Our first approach uses a simple linear machine‑learning model (LinearSVC) to figure out which features are genuinely useful for predicting the *classe* activity labels. A wrapper method (RFECV) then repeatedly tests smaller and smaller sets of features to find the smallest set that still gives strong performance. Using a careful, step‑by‑step trimming process, the model learns which features matter most, RFECV then removes the weakest one, and then the model is retrained to see how performance changes. This repeats until the best subset is found.
 
 <br>
-### Feature Selection <a name="linSVCRFECV-select"></a>
+### Implementing LinearSVC + RFECV <a name="linSVCRFECV-select"></a>
 
-Continuing with our df object containing our new vector features, we:
-- Import the packages we'll need: LinearSVC, RFECV and StratifiedKFold, along with Pipeline to pipe our standardisation step, and StandardScaler to apply standardisation.
-- Instantiate our Linear SVC estimator in this pipeline, that scales all candidate features prior to linear modelling using standardised scaling.
+Continuing with our train_df object containing our new vector features, we:
+- Import the packages we'll need: LinearSVC, RFECV and StratifiedKFold, along with Pipeline to pipe our standardisation step, and StandardScaler to apply standardisation prior to fitting the Linear SVC model.
+- Instantiate our Linear SVC estimator in this pipeline, that scales all candidate features prior to linear modelling - using standardised scaling.
 - run cross-validated random forest estimation.
 
 We need to set a few model hyperparameters specifying what we want the models to do: 
@@ -461,7 +489,16 @@ RFECV then uses this model to perform feature selection by repeatedly removing t
 
 The process chooses the feature set that gives the best accuracy score, and n_jobs=-1 simply means the computer uses all its available processing power to speed up this repeated testing. Together, these steps carefully identify the smallest set of features that gives strong predictive performance.
 
-Let's specify this in Python and train our model: 
+#### A note on Feature Scaling Rationale <a name="linSVCRFECV-scaling"></a>
+
+Because the feature set combines raw sensor magnitudes with window‑level statistics such as means, variances, ranges, and sums, the resulting variables span very different numeric scales. LinearSVC is sensitive to these scale differences: its coefficient‑based optimisation can be dominated by features with larger numeric ranges, which in turn misleads RFECV during recursive feature elimination. 
+Standardising all candidate features ensures that each variable contributes on a comparable footing, allowing the model to learn stable coefficients and enabling RFECV to rank features based on genuine predictive signal rather than raw magnitude. This produces a more reliable and interpretable feature‑selection process and improves the model’s ability to generalise.
+
+#### A note on Outlier Correction <a name="linSVCRFECV-scaling"></a>
+
+Window summaries calculated earlier will have absorbed most outliers naturally. Any remaining outliers should be kept as they signal normal behaviour during the movement, and this behaviour would be present in the kind of future movements we would be predicting. LinearSVC+RFECV is also robust to any remaining outliers!  
+
+Let's specify all of this in Python, and attempt to train our model: 
 
 <br>
 ```python
@@ -489,6 +526,7 @@ rfecv = RFECV(
 rfecv.fit(X, y)
 
 ```
+
 <br>
 Well, it’s been running for over an hour now on a laptop, and it still hasn’t finished...
 
