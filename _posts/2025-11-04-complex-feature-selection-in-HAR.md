@@ -246,9 +246,11 @@ plt.show()
 ```
 
 That code gives the plot:
+<br>
 
 <img width="726" height="414" alt="image" src="https://github.com/user-attachments/assets/b5f7eaca-8d29-4493-bba1-1ec3fa758459" />
 
+<br>
 We can see that the subjects in the right-hand column are contributing most to our class discrepancy at the total level, but in general, these classes are fairly well balanced. Let's now find the least balanced subject from these to use as our modelling test subject! We can see from this plot that it will be either Jeremy, or Adelmo. But we can't tell which it is, just by looking.
 
 We can find out using an 'L1 distance' matrix which can then tell us the mean distance across all classes, between subjects. 
@@ -558,9 +560,9 @@ rfecv.fit(X, y)
 <br>
 This has completed in 10 minutes, and has identified that the optimum number of features is 54. We can see this optimum in the next plot:
 <br>
-<br>
-<img width="724" height="387" alt="image" src="https://github.com/user-attachments/assets/5b57a081-9b53-4565-b081-3d1cdf2886be" />
-<br>
+
+<img width="727" height="389" alt="image" src="https://github.com/user-attachments/assets/2d777b74-3963-4134-bfa6-f9cddaffcf2a" />
+
 <br>
 However, even with the faster settings, RFECV still takes a long time to run on a laptop — too slow for a workflow to support real‑time technique feedback for a new lifter. 
 
