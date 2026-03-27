@@ -660,17 +660,17 @@ class CFSSelector(BaseEstimator, TransformerMixin):
 With the function now built, let's standardise our candidate feature set and run it through our CFS process.
 
 First, we standardise our data so that all candidate features are scaled, having their original values mapped to numbers between -1 and 1, with their mean at 0.
-Then, we run our CFS Selector function to apply CFS and choose the most independently predictive features!
+Then, we run our CFS Selector function to apply CFS and choose the most independently predictive features.
 
 <br>
 ```python
 
 scaler = StandardScaler()
-X_scaled = scaler.fit_transform(df.values)
+X_scaled = scaler.fit_transform(X.values)
 
 selector = CFSSelector().fit(X_scaled, y)
 
-selected_features = df.columns[selector.selected_indices_]
+selected_features = X.columns[selector.selected_indices_]
 ```
 <br>
 Let's view our resulting feature set:
@@ -682,24 +682,22 @@ for f in selected_features:
     print("-", f)
 ```
 <br>
-The Number of selected features is (only!): 6
+The Number of selected features is (only!): 4
 
 These are:
-- roll_belt_range
-- pitch_forearm_min
-- pitch_belt_range
-- magnet_arm_x
 - belt_accel_mag_range
-- roll_forearm_max
+- pitch_forearm_min
+- roll_belt_range
+- arm_mag_mag_range
 
 Importantly, this was found in just a few seconds!
 
 We've successfully run CFS on the 'training' set, the smaller set of data provided to us by the HAR team. In reality, using their full dataset, the HAR team would find 17 features using CFS, which is in the likely range of features that LinearSCV+RFECV might find if it completed successfully when prioritising discrimination over speed as we initially tried.
 
-The 6 features here are the top subset in the feature space, and we can compare these with the 54 we found using LinearSVC+RFECV.
-Again, vector summaries of the sensor data are showing as features predicting movement class. Five features are vector summaries (a min, a max, and a few ranges), and one is on the level of the original sensor data (the magnetometer for the arm, in the sideways direction).
+The 4 features here are the top subset in the feature space, and we can compare these with the 54 we found using LinearSVC+RFECV.
+Again, vector summaries of the sensor data are showing as features predicting movement class. All four features are vector summaries (a minimum, and three ranges), and none are on the level of the original sensor channels.
 
-Let's build a model data set using our top 6 features...
+Let's build our model train and test data set using our top 4 features...
 <br>
 ```python
 
@@ -707,20 +705,28 @@ Let's build a model data set using our top 6 features...
 selected_feature_list = list(selected_features)
 
 # Build the final dataframe
-df_selected = pd.DataFrame({
+train_df_selected = pd.DataFrame({
     "classe": y
 })
 
 # Add each selected feature column
 for feat in selected_feature_list:
-    df_selected[feat] = df[feat].values
+    train_df_selected[feat] = X[feat].values
 
-print("\nFinal dataframe shape:", df_selected.shape)
-print(df_selected.head())
+print("\nFinal dataframe shape:", train_df_selected.shape)
+print(train_df_selected.head())
+
+test_df_selected = pd.DataFrame()
+
+for feat in selected_feature_list:
+    test_df_selected[feat] = test_df[feat].values
+
+print("Test dataframe shape:", test_df_selected.shape)
+print(test_df_selected.head())
 
 ```
 <br>
-There we have it. A new dataframe *df_selected* containing the features that are most correlated with classe, that were the least correlated with eachother.
+There we have it. Two new dataframes *train_df_selected* containing the features that are most correlated with classe, that were the least correlated with eachother in training, and *test_df_selected*, containing the same features in Jeremy's test data.
 
 Credit for this approach goes to: Mark A Hall, whose thesis on CFS can be found at: https://ml.cms.waikato.ac.nz/publications/1999/99MH-Thesis.pdf
 
@@ -738,34 +744,30 @@ Let's now build our Random Forest model, following the steps in the code below..
 
 # Re-Shuffle our data for training
 
-df = shuffle(df_selected, random_state = 42)
+train_df_selected = shuffle(train_df_selected, random_state = 42)
 
 # Check Class Balance
 
-df["classe"].value_counts(normalize = True)
+train_df_selected["classe"].value_counts(normalize = True)
 
 
-## 2. Split Input Variables and Output Variable
+## 2. Split Input Variables and Output Variable to create test and training sets
 
-X = df.drop(["classe"], axis = 1)
-y = df["classe"]
-
-
-## 3. Split Out Training and Test Sets -
-# ensure stratification is even between classes
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state = 42, stratify = y)
+X_train = train_df_selected.drop(["classe"], axis = 1)
+y_train = train_df_selected["classe"]
+X_test = test_df_selected
+y_test = test_df["classe"]
 
 
-## 4. Model Training - train our model!
+## 3. Model Training - train our model!
 
-clf = RandomForestClassifier(random_state = 42, n_estimators = 500, max_features = 6)
+clf = RandomForestClassifier(random_state = 42, n_estimators = 500, max_features = 4)
 clf.fit(X_train, y_train)
 
 ```
 <br>
-We've fit a Random Forest model containing 500 decision trees, using just the 6 features selected by CFS from all of the raw sensor data, and our created vector summaries.
-We're now ready to assess its accuracy in classifying movement on the test set of ~3000 sensor snapshots!
+We've fit a Random Forest model containing 500 decision trees, using just the 4 features selected by CFS from all of the raw sensor data, and our created vector summaries.
+We're now ready to assess its accuracy in classifying movement on the test set - Jeremy's data!
 
 <br>
 <br>
@@ -773,7 +775,7 @@ We're now ready to assess its accuracy in classifying movement on the test set o
 <br>
 ### Model Performance
 
-Based on the values of our 6 features, each of the 500 decision trees in the Random Forest independently predicts one of the 5 movement classes for every row in the test set. A decision tree chooses thresholds during training by testing many possible split points and selecting the one that most reduces Gini impurity. During prediction, the tree simply compares each feature value to these learned thresholds to decide which branch to follow. Each tree routes the sample down its branches until it reaches a leaf node, and the class stored in that leaf becomes that tree’s ‘vote’. These votes represent the class each tree considers most likely, given the feature values it has seen. The Random Forest then counts all votes across the 500 trees, and the class with the most votes becomes the model’s final prediction for each row in the test set. 
+Based on the values of our 4 features, each of the 500 decision trees in the Random Forest independently predicts one of the 5 movement classes for every row in the test set. A decision tree chooses thresholds during training by testing many possible split points and selecting the one that most reduces Gini impurity. During prediction, the tree simply compares each feature value to these learned thresholds to decide which branch to follow. Each tree routes the sample down its branches until it reaches a leaf node, and the class stored in that leaf becomes that tree’s ‘vote’. These votes represent the class each tree considers most likely, given the feature values it has seen. The Random Forest then counts all votes across the 500 trees, and the class with the most votes becomes the model’s final prediction for each row in the test set. 
 
 We output an object y_pred_prob that views the probabilities that each decision tree would arrive at each of the 5 outcomes for each row in the test set. 
 
@@ -802,22 +804,19 @@ plt.show()
 accuracy_score(y_test, y_pred_class)
 ```
 <br>
-<img width="445" height="473" alt="image" src="https://github.com/user-attachments/assets/b1524ed0-95ef-4bbe-a159-026ded60eea0" />
+<img width="425" height="466" alt="image" src="https://github.com/user-attachments/assets/a6b60b5e-069c-4509-98ba-3b6123960b75" />
 <br>
-The confusion matrix shows *almost* perfect prediction. The Accuracy of this model is: 0.99898 !
+The confusion matrix shows poor prediction. The Accuracy of this model is: 0.5097. 
 
-Any model trained on this data could not be expected to be meaningfully more accurate than this. A model trained on more of the HAR data could achieve perfect prediction on this test set, which we will see later. 
+CFS has reduced the feature space to a point where the model cannot usefully classify a new subject's movements!
 
-At this level of accuracy, we'd prefer a model with few features such as CFS provides, over the LinearSVC+RFECV model that contained 54 features, for two reasons:
-
-1) explainability and
-2) run speed, especially since we need good speed in predicting the class of a new lift.
+A model trained on more of the HAR data might achieve better results, still using CFS. 
 
 <br>
 ### Feature Importance
-Our Random Forest is an ensemble model, made up of 500 Decision Trees, each of which is different due to the randomness of the data being provided, and the random selection of our 6 input variables available at each potential split point.
+Our Random Forest is an ensemble model, made up of 500 Decision Trees, each of which is different due to the randomness of the data being provided, and the random selection of our 4 input variables available at each potential split point.
 
-Because of this, we end up with a powerful and robust model, but because of the random or different nature of all these Decision trees - the model gives us a unique insight into how important each of our input variables are to the overall model.
+We have a weak model, but if it had been accurate, because of the random or different nature of all these Decision trees - the model gives us a unique insight into how important each of our input variables are to the overall model.
 
 As we’re using random samples of data, and input variables for each Decision Tree - there are many scenarios where certain input variables are being held back and this enables us a way to compare how accurate the models' predictions are if that variable is or isn’t present.
 
@@ -873,330 +872,184 @@ plt.tight_layout()
 plt.show()
 ```
 
-That code gives us the below plots for Feature Importance and Permutation Importance
-<br>
-<img width="703" height="464" alt="image" src="https://github.com/user-attachments/assets/64ee9cb3-6e2e-4506-9dae-1833d3de956c" />
-<br>
-<img width="713" height="465" alt="image" src="https://github.com/user-attachments/assets/f443c13e-683d-4645-930e-4ef30426de3b" />
+That code gives us the below plots for Feature Importance and Permutation Importance. Given the poor predictive power of this model, these are not useful in this case.
 
-There are slight differences in the order or “importance” for the features but overall they have provided similar findings: 
-
-The most important measures in classifying bicep curl movement class come from the belt and forearm: The roll range and acceleration range of the belt, and the maximum roll and minimum pitch of the forearm.  
+<br>
+<img width="727" height="408" alt="image" src="https://github.com/user-attachments/assets/1882684d-0d65-4d49-8d3c-e7abbf1c4145" />
+<br>
+<img width="730" height="393" alt="image" src="https://github.com/user-attachments/assets/3a52cf91-2478-4b7c-9aed-906873764687" />
 
 <br>
 <br>
 # Full Set Feature Performance  <a name="fully-featured"></a>
 
-Let's assess how a model containing the full set of features identified using a much larger dataset (also using CFS) would perform on the training subset that we received from the HAR team.
+Let's assess how a model containing the full set of features identified using a much larger dataset (also using CFS) would perform trained on our training subset and tested on Jeremy's data.
 
 First, let's re-create the 17 features that were reported to be used in the HAR team's own RF modelling.
 
 <br>
 ### Recreate features found using CFS in the study <a name="fully-featured-recr"></a>
+
 ```python
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
-# import data
-df = pd.read_csv("data/pml_training.csv")
+train_df["num_window"] = df.loc[train_df.index, "num_window"]
+test_df["num_window"]  = df.loc[test_df.index, "num_window"]
 
-# drop unnecessary columns
+# Work on a copy of the training set
+df_c = train_df.copy()
 
-df.drop(["Unnamed: 0",
-         "user_name",
-         "raw_timestamp_part_1", 
-         "raw_timestamp_part_2",
-         "new_window"], axis = 1, inplace = True)
+# -----------------------------
+# Helper functions
+# -----------------------------
 
-# Missingness is by column: calculated values are deleted from this set. 
-# Count up missing values in each column
+def mag(df, cols):
+    """Compute vector magnitude for 3-axis sensor."""
+    return np.sqrt(df[cols[0]]**2 + df[cols[1]]**2 + df[cols[2]]**2)
 
-missing_counts = {col: df[col].isna().sum() for col in df.columns}
+def win(df, col, func):
+    """Apply window-level function and broadcast."""
+    return df.groupby("num_window")[col].transform(func)
 
-# In the data, we have complete data for a subset of columns (55), and missing data <= 20 obs for the remainder (100).
+# -----------------------------
+# 1. BELT features
+# -----------------------------
 
-# View the dictionary
-missing_counts
+df_c["roll_belt_mean"] = win(df_c, "roll_belt", "mean")
+df_c["roll_belt_var"]  = win(df_c, "roll_belt", "var")
 
-# Drop all columns with missing values above 20
-features_with_miss = [col for col, count in missing_counts.items() if count >= 20]
+df_c["accel_belt_mag"] = mag(df_c, ["accel_belt_x","accel_belt_y","accel_belt_z"])
+df_c["accel_belt_mag_max"]   = win(df_c, "accel_belt_mag", "max")
+df_c["accel_belt_mag_range"] = win(df_c, "accel_belt_mag", lambda s: s.max() - s.min())
+df_c["accel_belt_mag_var"]   = win(df_c, "accel_belt_mag", "var")
 
-df = df.drop(features_with_miss, axis=1)
+df_c["gyros_belt_mag"] = mag(df_c, ["gyros_belt_x","gyros_belt_y","gyros_belt_z"])
+df_c["gyros_belt_mag_var"] = win(df_c, "gyros_belt_mag", "var")
 
-#### View distribution of observations by num_window
-counts = df.groupby('num_window').size()
+df_c["magnet_belt_mag"] = mag(df_c, ["magnet_belt_x","magnet_belt_y","magnet_belt_z"])
+df_c["magnet_belt_mag_var"] = win(df_c, "magnet_belt_mag", "var")
 
-#### 17 Features were selected by the paper using the CFS method: ####
-## A good feature subset contains features that are highly correlated with the class but uncorrelated with each other. ##
+# -----------------------------
+# 2. ARM features
+# -----------------------------
 
-# Let's recreate these measures on our training data using standard HAR (Human Activity Recognition) practice #
+df_c["accel_arm_mag"] = mag(df_c, ["accel_arm_x","accel_arm_y","accel_arm_z"])
+df_c["accel_arm_mag_var"] = win(df_c, "accel_arm_mag", "var")
 
-features = []
-mags = []
+df_c["magnet_arm_mag"] = mag(df_c, ["magnet_arm_x","magnet_arm_y","magnet_arm_z"])
+df_c["magnet_arm_mag_max"] = win(df_c, "magnet_arm_mag", "max")
+df_c["magnet_arm_mag_min"] = win(df_c, "magnet_arm_mag", "min")
 
-#                               In BELT
+# -----------------------------
+# 3. DUMBBELL features
+# -----------------------------
 
-# A) the mean and variance of the roll (all vars by sliding window-frame: num_window)
+df_c["accel_dumbbell_mag"] = mag(df_c, ["accel_dumbbell_x","accel_dumbbell_y","accel_dumbbell_z"])
+df_c["accel_dumbbell_mag_max"] = win(df_c, "accel_dumbbell_mag", "max")
 
-df['roll_belt_mean'] = (
-    df.groupby('num_window')['roll_belt']
-      .transform('mean')
-)
+df_c["gyros_dumbbell_mag"] = mag(df_c, ["gyros_dumbbell_x","gyros_dumbbell_y","gyros_dumbbell_z"])
+df_c["gyros_dumbbell_mag_var"] = win(df_c, "gyros_dumbbell_mag", "var")
 
-df['roll_belt_var'] = (
-    df.groupby('num_window')['roll_belt']
-      .transform('var')   # sample variance (ddof=1)
-)
+df_c["magnet_dumbbell_mag"] = mag(df_c, ["magnet_dumbbell_x","magnet_dumbbell_y","magnet_dumbbell_z"])
+df_c["magnet_dumbbell_mag_max"] = win(df_c, "magnet_dumbbell_mag", "max")
+df_c["magnet_dumbbell_mag_min"] = win(df_c, "magnet_dumbbell_mag", "min")
 
-features.extend([
-    'roll_belt_mean',
-    'roll_belt_var'
-])
+# -----------------------------
+# 4. FOREARM (glove) features
+# -----------------------------
 
+df_c["pitch_forearm_sum"] = win(df_c, "pitch_forearm", "sum")
 
-# B) maximum, range and variance of the belt accelerometer vector: 
+df_c["gyros_forearm_mag"] = mag(df_c, ["gyros_forearm_x","gyros_forearm_y","gyros_forearm_z"])
+df_c["gyros_forearm_mag_max"] = win(df_c, "gyros_forearm_mag", "max")
+df_c["gyros_forearm_mag_min"] = win(df_c, "gyros_forearm_mag", "min")
 
-# 1. Compute the vector magnitude for each row
-df['accel_belt_mag'] = np.sqrt(
-    df['accel_belt_x']**2 +
-    df['accel_belt_y']**2 +
-    df['accel_belt_z']**2
-)
+# -----------------------------
+# Final: drop intermediate magnitude columns
+# -----------------------------
 
-# 2. Compute window-level features and broadcast to each row
-df['accel_belt_mag_max'] = (
-    df.groupby('num_window')['accel_belt_mag']
-      .transform('max')
-)
+mag_cols = [col for col in df_c.columns if col.endswith("_mag")]
+df_veloso = df_c.drop(columns=mag_cols)
 
-df['accel_belt_mag_range'] = (
-    df.groupby('num_window')['accel_belt_mag']
-      .transform(lambda s: s.max() - s.min())
-)
 
-df['accel_belt_mag_var'] = (
-    df.groupby('num_window')['accel_belt_mag']
-      .transform('var')   # sample variance (ddof=1)
-)
+# ---------------------------------------
+# Build Veloso features for the test set
+# ---------------------------------------
 
-mags.extend(['accel_belt_mag'])
+df_t = test_df.copy()
 
-features.extend([
-    'accel_belt_mag_max',
-    'accel_belt_mag_range',
-    'accel_belt_mag_var'
-])
+# BELT
+df_t["roll_belt_mean"] = win(df_t, "roll_belt", "mean")
+df_t["roll_belt_var"]  = win(df_t, "roll_belt", "var")
 
+df_t["accel_belt_mag"] = mag(df_t, ["accel_belt_x","accel_belt_y","accel_belt_z"])
+df_t["accel_belt_mag_max"]   = win(df_t, "accel_belt_mag", "max")
+df_t["accel_belt_mag_range"] = win(df_t, "accel_belt_mag", lambda s: s.max() - s.min())
+df_t["accel_belt_mag_var"]   = win(df_t, "accel_belt_mag", "var")
 
-# C) variance of the gyro: 
+df_t["gyros_belt_mag"] = mag(df_t, ["gyros_belt_x","gyros_belt_y","gyros_belt_z"])
+df_t["gyros_belt_mag_var"] = win(df_t, "gyros_belt_mag", "var")
 
-# 1. Compute the vector magnitude for each row
-df['gyros_belt_mag'] = np.sqrt(
-    df['gyros_belt_x']**2 +
-    df['gyros_belt_y']**2 +
-    df['gyros_belt_z']**2
-)
-
-df['gyros_belt_mag_var'] = (
-    df.groupby('num_window')['gyros_belt_mag']
-      .transform('var')   # sample variance (ddof=1)
-)
-
-mags.extend(['gyros_belt_mag'])
-
-features.extend([
-    'gyros_belt_mag_var'
-])
-
-# D) variance of the magnetometer.
-
-# 1. Compute magnetometer vector magnitude
-df['magnet_belt_mag'] = np.sqrt(
-    df['magnet_belt_x']**2 +
-    df['magnet_belt_y']**2 +
-    df['magnet_belt_z']**2
-)
-
-# 2. Compute window-level variance and broadcast to each row
-df['magnet_belt_mag_var'] = (
-    df.groupby('num_window')['magnet_belt_mag']
-      .transform('var')   # sample variance (ddof=1)
-)
-
-mags.extend(['magnet_belt_mag'])
-
-features.extend([
-    'magnet_belt_mag_var'
-])
-
-#                                   In ARM:
-    
-# A) variance of the accelerometer vector
-# B) maximum and minimum of the magnetometer
-
-# A.
-df['accel_arm_mag'] = np.sqrt(
-    df['accel_arm_x']**2 +
-    df['accel_arm_y']**2 +
-    df['accel_arm_z']**2
-)
-
-df['accel_arm_mag_var'] = (
-    df.groupby('num_window')['accel_arm_mag']
-      .transform('var')   # sample variance (ddof=1)
-)
-
-mags.extend(['accel_arm_mag'])
-
-features.extend([
-    'accel_arm_mag_var'
-])
-
-# B.
-df['magnet_arm_mag'] = np.sqrt(
-    df['magnet_arm_x']**2 +
-    df['magnet_arm_y']**2 +
-    df['magnet_arm_z']**2
-)
-
-# 2. Compute window-level features and broadcast to each row
-
-# maximum:
-df['magnet_arm_mag_max'] = (
-    df.groupby('num_window')['magnet_arm_mag']
-      .transform('max')
-)
-
-# minimum:
-df['magnet_arm_mag_min'] = (
-    df.groupby('num_window')['magnet_arm_mag']
-      .transform('min')
-)
-
-mags.extend(['magnet_arm_mag'])
-
-features.extend([
-    'magnet_arm_mag_max',
-    'magnet_arm_mag_min'
-])
-
-#                                   In DUMBBELL:
-    
-# a) maximum of the acceleration
-# b) variance of the gyro and 
-# c) maximum and minimum of the magnetometer
-
-#A
-df['accel_dumbbell_mag'] = np.sqrt(
-    df['accel_dumbbell_x']**2 +
-    df['accel_dumbbell_y']**2 +
-    df['accel_dumbbell_z']**2
-)
-
-df['accel_dumbbell_mag_max'] = (
-    df.groupby('num_window')['accel_dumbbell_mag']
-      .transform('max')
-)
-
-mags.extend(['accel_dumbbell_mag'])
-
-features.extend([
-    'accel_dumbbell_mag_max'
-])
-
-#B
-
-df['gyros_dumbbell_mag'] = np.sqrt(
-    df['gyros_dumbbell_x']**2 +
-    df['gyros_dumbbell_y']**2 +
-    df['gyros_dumbbell_z']**2
-)
-
-df['gyros_dumbbell_mag_var'] = (
-    df.groupby('num_window')['gyros_dumbbell_mag']
-      .transform('var')   # sample variance (ddof=1)
-)
-
-mags.extend(['gyros_dumbbell_mag'])
-
-features.extend([
-    'gyros_dumbbell_mag_var'
-])
-
-
-#C
-df['magnet_dumbbell_mag'] = np.sqrt(
-    df['magnet_dumbbell_x']**2 +
-    df['magnet_dumbbell_y']**2 +
-    df['magnet_dumbbell_z']**2
-)
-
-# maximum:
-df['magnet_dumbbell_mag_max'] = (
-    df.groupby('num_window')['magnet_dumbbell_mag']
-      .transform('max')
-)
-
-# minimum:
-df['magnet_dumbbell_mag_min'] = (
-    df.groupby('num_window')['magnet_dumbbell_mag']
-      .transform('min')
-)
-
-mags.extend(['magnet_dumbbell_mag'])
-
-features.extend([
-    'magnet_dumbbell_mag_max',
-    'magnet_dumbbell_mag_min'
-])
-
-
-#                                   In GLOVE (Fore-arm):
-
-# a) sum of the pitch
-df['pitch_forearm_sum'] = (
-    df.groupby('num_window')['pitch_forearm']
-        .transform('sum')
-)
-
-features.extend([
-    'pitch_forearm_sum'
-])
-
-# b) the maximum and minimum of the gyro
-df['gyros_forearm_mag'] = np.sqrt(
-    df['gyros_forearm_x']**2 +
-    df['gyros_forearm_y']**2 +
-    df['gyros_forearm_z']**2
-)
-
-# maximum:
-df['gyros_forearm_mag_max'] = (
-    df.groupby('num_window')['gyros_forearm_mag']
-      .transform('max')
-)
-
-# minimum:
-df['gyros_forearm_mag_min'] = (
-    df.groupby('num_window')['gyros_forearm_mag']
-      .transform('min')
-)
-
-mags.extend(['gyros_forearm_mag'])
-
-features.extend([
-    'gyros_forearm_mag_max',
-    'gyros_forearm_mag_min'
-])
-
-print(features)
-print(mags)
-print(df.columns[55:81])
-print(df.drop(mags, axis=1).columns)
-
-df.drop(mags, axis=1, inplace = True)
+df_t["magnet_belt_mag"] = mag(df_t, ["magnet_belt_x","magnet_belt_y","magnet_belt_z"])
+df_t["magnet_belt_mag_var"] = win(df_t, "magnet_belt_mag", "var")
+
+# ARM
+df_t["accel_arm_mag"] = mag(df_t, ["accel_arm_x","accel_arm_y","accel_arm_z"])
+df_t["accel_arm_mag_var"] = win(df_t, "accel_arm_mag", "var")
+
+df_t["magnet_arm_mag"] = mag(df_t, ["magnet_arm_x","magnet_arm_y","magnet_arm_z"])
+df_t["magnet_arm_mag_max"] = win(df_t, "magnet_arm_mag", "max")
+df_t["magnet_arm_mag_min"] = win(df_t, "magnet_arm_mag", "min")
+
+# DUMBBELL
+df_t["accel_dumbbell_mag"] = mag(df_t, ["accel_dumbbell_x","accel_dumbbell_y","accel_dumbbell_z"])
+df_t["accel_dumbbell_mag_max"] = win(df_t, "accel_dumbbell_mag", "max")
+
+df_t["gyros_dumbbell_mag"] = mag(df_t, ["gyros_dumbbell_x","gyros_dumbbell_y","gyros_dumbbell_z"])
+df_t["gyros_dumbbell_mag_var"] = win(df_t, "gyros_dumbbell_mag", "var")
+
+df_t["magnet_dumbbell_mag"] = mag(df_t, ["magnet_dumbbell_x","magnet_dumbbell_y","magnet_dumbbell_z"])
+df_t["magnet_dumbbell_mag_max"] = win(df_t, "magnet_dumbbell_mag", "max")
+df_t["magnet_dumbbell_mag_min"] = win(df_t, "magnet_dumbbell_mag", "min")
+
+# FOREARM
+df_t["pitch_forearm_sum"] = win(df_t, "pitch_forearm", "sum")
+
+df_t["gyros_forearm_mag"] = mag(df_t, ["gyros_forearm_x","gyros_forearm_y","gyros_forearm_z"])
+df_t["gyros_forearm_mag_max"] = win(df_t, "gyros_forearm_mag", "max")
+df_t["gyros_forearm_mag_min"] = win(df_t, "gyros_forearm_mag", "min")
+
+# Drop intermediate magnitude columns
+mag_cols_t = [col for col in df_t.columns if col.endswith("_mag")]
+df_veloso_test = df_t.drop(columns=mag_cols_t)
+
+veloso_features = [
+    # BELT
+    "roll_belt_mean", "roll_belt_var",
+    "accel_belt_mag_max", "accel_belt_mag_range", "accel_belt_mag_var",
+    "gyros_belt_mag_var",
+    "magnet_belt_mag_var",
+
+    # ARM
+    "accel_arm_mag_var",
+    "magnet_arm_mag_max", "magnet_arm_mag_min",
+
+    # DUMBBELL
+    "accel_dumbbell_mag_max",
+    "gyros_dumbbell_mag_var",
+    "magnet_dumbbell_mag_max", "magnet_dumbbell_mag_min",
+
+    # FOREARM
+    "pitch_forearm_sum",
+    "gyros_forearm_mag_max", "gyros_forearm_mag_min"
+]
+
+df_veloso = df_veloso[veloso_features + ["classe"]]
+df_veloso_test = df_veloso_test[veloso_features + ["classe"]]
 ```
+
 <br>
 Next, let's use these in the Random Forest model we built on our own data.
 Let's keep the number of decision trees comparable to our own model: (500)
@@ -1220,11 +1073,11 @@ After CFS was run on the full HAR dataset, we have the following fields as featu
 | magnet_belt_mag_var | Independent | (magnetometry) variance of the belt magnetometer  |
 | accel_arm_mag_var | Independent | (accelerometry) acceleration variance over a time window of the arm sensor  |
 | magnet_arm_mag_max | Independent | (magnetometry) maximum magnetometer reading over a time window of the arm sensor  |
-| **magnet_arm_mag_min** | Independent | (magnetometry) minimum magnetometer reading over a time window of the arm sensor  |
+| magnet_arm_mag_min | Independent | (magnetometry) minimum magnetometer reading over a time window of the arm sensor  |
 | accel_dumbbell_mag_max | Independent | (accelerometry) maximum acceleration over a time window of the dumbbell sensor  |
-| **gyros_dumbbell_mag_var** | Independent |  (gyrometry) maximum gyrometer reading over a time window of the dumbbell sensor |
-| **magnet_dumbbell_mag_max** | Independent | (magnetometry) maximum magnetometer reading over a time window of the dumbbell sensor |
-| **magnet_dumbbell_mag_min** | Independent | (magnetometry) minimum magnetometer reading over a time window of the dumbbell sensor |
+| gyros_dumbbell_mag_var | Independent |  (gyrometry) maximum gyrometer reading over a time window of the dumbbell sensor |
+| magnet_dumbbell_mag_max | Independent | (magnetometry) maximum magnetometer reading over a time window of the dumbbell sensor |
+| magnet_dumbbell_mag_min | Independent | (magnetometry) minimum magnetometer reading over a time window of the dumbbell sensor |
 | pitch_forearm_sum | Independent | sum over the time window of the pitch from the forearm sensor (pitch calculated from accelerometry) |
 | gyros_forearm_mag_max | Independent | (gyrometry) maximum gyrometer reading over a time window of the forearm sensor |
 | gyros_forearm_mag_min | Independent | (gyrometry) minimum gyrometer reading over a time window of the forearm sensor |
@@ -1233,7 +1086,7 @@ After CFS was run on the full HAR dataset, we have the following fields as featu
 <img width="439" height="474" alt="image" src="https://github.com/user-attachments/assets/02e87961-9581-4e16-973f-d69df47d0f6e" />.
 
 <br>
-Accuracy: 1.0
+Accuracy: 0.5032
 
 This training set has not challenged the model containing 17 features. With 500 Decision Trees, it achieved perfect prediction!
 <br>
@@ -1241,21 +1094,11 @@ This training set has not challenged the model containing 17 features. With 500 
 <br>
 <img width="733" height="463" alt="image" src="https://github.com/user-attachments/assets/48ee91d7-fb76-4516-b136-a953912358ad" />.
 <br>
-The features contributing most to prediction, calculated by time window, are:
 
-1. The maximum magnetometer reading of the dumbbell sensor
-2. Variance of the roll from the belt sensor
-3. Variance of the gyrometer reading from the dumbbell sensor
-4. Minimum magnetometer reading from the dumbbell sensor
-5. Minimum magnetometer reading from the arm sensor
+The Veloso‑17 feature set produced substantially better performance than the CFS‑4 subset, demonstrating that domain‑engineered HAR features capture more generalisable movement structure across subjects. The model classified classes 0, 1, and 4 reasonably well, but struggled with classes 2 and especially 3, which were frequently misclassified as lower‑numbered classes. Feature importance analysis showed a balanced contribution across belt, dumbbell, and forearm features, with roll‑belt variance, forearm gyro maxima, and cumulative forearm pitch emerging as the strongest predictors. Permutation importance confirmed that these features are genuinely essential, while several others contribute only marginally, indicating redundancy and subject‑specific sensitivity. Overall, Veloso‑17 provides a meaningful improvement but still falls short of robust subject‑independent performance.
 
 <br>
 <br>
 # Growth & Next Steps  <a name="growth-next-steps"></a>
 
-Since predictive accuracy using our 6-feature model was very high - our feature selection and modelling approach could be tested on new subjects performing different types of weighted lifts, to see if this accuracy translates to different movements. Other movements may not be as predictable by differences in positioning between forearm and body, so repeating CFS and RF on new movement data would be needed to classify it. We'd use algorithms trained and tested on data from the new movement in a similar fashion to our workflow using data specific to biceps curls. 
-
-From a data point of view, further feature engineering could be undertaken and fit to more complex movements, with sensor placement designed to capture movement by thinking about pitch and roll ranges and maximums throughout the movement over the collection window - and positioning sensors where these would differ between a correct performance and common errors.
-
-A common exercise for fitness is the barbell squat. For this movement, sensor collection might focus on the belt and knee to assess pitch and roll differences between correct squat technique and a common error.
-An inexperienced lifter often pushes their hips back, and knees inward when fatiguing while using challenging weight - lifting with the back rather than the legs. This creates a particular movement that differs from the correct technique when the weight is controlled. In this case, forearm to belt position would be less predictive of the error vs correct technique (or weight selection) than knee and belt position would be. Our CFS and RF approach fit to knee and forearm HAR sensor data could have the potential to classify this error in a feedback system in real time.
+[place]
