@@ -528,16 +528,11 @@ rfecv.fit(X, y)
 ```
 
 <br>
-Well, it’s been running for over an hour now on a laptop, and it still hasn’t finished...
+The full LinearSVC + RFECV run was still churning away after an hour on a laptop, and there’s a chance it would hit memory limits before finishing. It **would** eventually produce a feature set, but the runtime alone is a good reason to try something faster.
+To speed these models up, we can relax a few settings: reduce max_iter so LinearSVC doesn’t spend as long converging, increase the RFECV step size so it removes features in larger chunks, and drop cross‑validation from 5 folds to 2. These changes make the process dramatically quicker, but they also make the feature search a bit less precise. We’ll still uncover useful predictors, but the selection won’t be as fine‑tuned as the full version.
 
-While this will eventually complete, and deliver a nice set of features to use in modelling our prediction, it can take over an hour depending on processing speed! We may also run out of RAM before the algorithms can finish. This is reason enough to try something else, so let's end this process and try some new parameters that may speed up the feature selection.
+With that in mind, it makes sense to reset the hyperparameters and rerun the feature selection using these faster settings.
 
-We'd need something significantly faster if we were investigating a range of new exercises. Let's reduce max_iter to 2000 to reduce the time LinearSVC has to reach a solution, increase the number of features we remove at a time by RFECV by changing step from 1 to 20, and change our cross-fold stratification from 5 'chunks' to only 2.
-
-This could speed processing significantly, but at the cost of some accuracy in finding the 'ideal' feature set from our large range of HAR data. 
-We will likely still find predictive features for a model that are the most associated with the class, but these faster settings may not be careful enough to distinguish the most predictive of these.  
-
-Let's reset our hyperparameters and re-run our code.
 
 <br>
 ```python
@@ -560,7 +555,7 @@ rfecv.fit(X, y)
 
 ```
 <br>
-This has completed in 15 minutes, and has identified that the optimum number of features is 54.
+This has completed in 10 minutes, and has identified that the optimum number of features is 54.
 <br>
 <img width="735" height="396" alt="image" src="https://github.com/user-attachments/assets/bc0821cb-7c03-415a-999e-3c300b6ca802" />
 <br>
