@@ -202,7 +202,7 @@ Since we'll be identifying a suitable holdout subject by class proportion, let's
 <br>
 ### Test and Training Split by Subject <a name="veccalc-split"></a>
 
-Since all data came from 6 subjects, and we want to use one as our test case, let's assess the breakdown by subject name and compute class proportions per subject.
+Since all data came from 6 subjects, and we want to use one as our test case, let's assess the breakdown by subject name and then let's calculate class proportions per subject.
 
 ```python
 class_props = (
