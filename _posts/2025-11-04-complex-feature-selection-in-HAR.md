@@ -554,25 +554,30 @@ rfecv = RFECV(
 rfecv.fit(X, y)
 
 ```
+
 <br>
-This has completed in 10 minutes, and has identified that the optimum number of features is 54.
+This has completed in 10 minutes, and has identified that the optimum number of features is 54. We can see this optimum in the next plot:
 <br>
-<img width="735" height="396" alt="image" src="https://github.com/user-attachments/assets/bc0821cb-7c03-415a-999e-3c300b6ca802" />
 <br>
-This has still taken a very long time in our context, too long for our purpose to provide real-time technique cues to a new lifter, and we're already sacrifing model accuracy to speed this up. If our first attempt had reached completion, we'd expect that around 10-25 features would be predictive, using our first hyperparameter settings.
+<img width="724" height="387" alt="image" src="https://github.com/user-attachments/assets/5b57a081-9b53-4565-b081-3d1cdf2886be" />
+<br>
+<br>
+However, even with the faster settings, RFECV still takes a long time to run on a laptop — too slow for a workflow to support real‑time technique feedback for a new lifter. 
 
-Interestingly, using this faster approach, only 5 of our features remain at the sensor recorded level. 
-49 come from our set of calculated vector summaries, very interesting! The vector summaries are capturing most, but not all of the predictive information contained in the original sensor-level data.
+We’ve already relaxed the hyperparameters, which means we’re trading some precision in feature selection for speed. With the original, more thorough settings, we’d expect RFECV to settle on about 10–25 predictive features, which is typical for this kind of HAR data.
 
-We could now re-run RFECV on this subset with more granularity such as we tried at first, to distinguish further, but this approach is still a little too time-consuming by this point for our purposes.
+Using the faster configuration, the results are very interesting! Only 7 of the original sensor‑level features remain, while 47 come from the engineered vector‑summary features. That tells us the window‑level summaries are capturing most of the useful signal, though not all of it. The raw sensor channels still contribute a small amount of unique information.
 
-Let's leave the HAR industry approach for more powerful machines, and try a more elegant approach to feature selection.
-Instead of LinearSVC + RFECV, let's try Correlation-Based Feature Selection (CFS). 
+We could take this reduced feature set and rerun RFECV with more fine‑grained settings to refine it further, but at this point the runtime becomes impractical for our use case.
 
-We'll create some functions using numpy in Python to define what we want our CFS to do. 
-We'll define 'merit' mathematically in our context, and add features through this algorithm, for as long as they continue to improve merit. 
+So rather than pushing deeper into the heavy HAR‑style wrapper methods, it makes sense to try something more elegant and lightweight. Let's try a good alternative, Correlation‑Based Feature Selection (CFS). This filter method looks for features that are highly correlated with the target while being minimally correlated with each other.
 
-Then we'll standardise the scaling of all candidate features and output a *new* dataframe for modelling that contains the features found by a CFS function.  
+We’ll implement a simple CFS routine in Python using NumPy in four steps:
+
+1. define a merit function
+2. add features as long as they improve that merit
+3. standardise the resulting feature set
+4. produce a clean modelling dataframe based on the selected subset
 
 <br>
 # CFS Feature Selection <a name="cfs-title"></a>
