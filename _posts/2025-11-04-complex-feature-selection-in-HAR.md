@@ -557,6 +557,8 @@ rfecv.fit(X, y)
 
 ```
 
+
+
 <br>
 This has completed in 10 minutes, and has identified that the optimum number of features is 54. We can see this optimum in the next plot:
 
