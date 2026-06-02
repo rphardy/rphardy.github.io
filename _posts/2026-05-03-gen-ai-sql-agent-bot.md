@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Building an AI SQL Agent On A Live Cloud-Based Database
+title: Building an AI SQL Agent on a Live Cloud-Based Database
 image: "/posts/gen-ai-sql-agent-title-img.png"
 tags: [GenAI, SQL, Agents, Python, LangChain, PostgreSQL]
 ---
