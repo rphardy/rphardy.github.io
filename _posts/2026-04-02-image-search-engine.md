@@ -104,7 +104,7 @@ For image based tasks this often means using all the *pre-learned* features from
 
 The hope is, that the features which have already been learned will be good enough to differentiate between our new classes, and we’ll save a whole lot of training time (and be able to utilise a network architecture that has potentially already been optimised).
 
-For our task we will be utilising a famous network known as **VGG16**.  This was designed back in 2014, but even by today's standards is a fairly heft network.  It was trained on the famous *ImageNet* dataset, with over a million images across one thousand different image classes. Everything from goldfish to cauliflowers to bottles of wine, to scuba divers!
+For our task we will be utilising a famous network known as **VGG16**.  This was designed back in 2014, but even by today's standards is a fairly hefty network.  It was trained on the famous *ImageNet* dataset, with over a million images across one thousand different image classes. Everything from goldfish to cauliflowers to bottles of wine, to scuba divers!
 
 <br>
 ![alt text](/img/posts/vgg16-architecture.png "VGG16 Architecture")
