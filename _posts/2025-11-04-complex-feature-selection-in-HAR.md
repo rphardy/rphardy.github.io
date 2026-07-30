@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Feature Selection For Classification Accuracy
+title: WIP : Feature Selection For Classification Accuracy
 image: "/posts/classification-title-img.png"
 tags: [Human Activity Recognition, Machine Learning, Classification, Python]
 ---
