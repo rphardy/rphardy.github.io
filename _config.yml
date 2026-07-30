@@ -9,7 +9,7 @@ plugins:
 #-------------------------------
 # General Site Settings
 title: Richard Hardy, MBiostats
-description: "Hi, I'm Rick, a Data Scientist. My portfolio showcases projects that walk through extracting reliable insights from data to address common business questions. Please visit my GitHub, LinkedIn, or download my résumé using the links below."
+description: "Hi, I'm Rick, a Data Scientist. My portfolio showcases projects that walk through extracting reliable insights from data to address common business questions. Please visit my GitHub, LinkedIn, or download my resumé using the links below."
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "" # the base hostname & protocol for your site, e.g. http://example.com
 
