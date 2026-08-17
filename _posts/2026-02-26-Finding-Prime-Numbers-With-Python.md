@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Finding Prime Numbers with Python
+title: WIP - Finding Prime Numbers with Python
 image: "/posts/coffee_python.jpg"
 tags: [Python, Primes]
 ---
