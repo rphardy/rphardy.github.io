@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Evaluating a Marketing Campaign using a SQL Pipeline
+title: WIP - Evaluating a Marketing Campaign using a SQL Pipeline
 image: "/posts/pipeline_image.jpeg"
 tags: [SQL, Statistical Assumptions, Analysis Piping, json]
 ---
