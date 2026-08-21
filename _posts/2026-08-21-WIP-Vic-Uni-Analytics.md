@@ -1,8 +1,8 @@
 ---
 layout: post
 title: Assessing Student Outcomes at Victorian Universities 
-image: "/posts/deakin-proj.png"
-tags: [Tableau, EDA, Python]
+image: "/posts/tableau-map-image.png"
+tags: [Tableau, EDA, Data Viz, Python]
 ---
 
 In this project we build a dashboard using publically available education data to assess student outcomes across universities in Victoria, Australia with a finer focus on Deakin University.  
