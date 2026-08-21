@@ -35,21 +35,26 @@ We aim to describe historic patterns and trends by bachelor student cohort: dome
 
 We'll: 
 * Retrieve Victorian and Australian instution and means data from: https://www.education.gov.au/higher-education-statistics/resources/2024-section-15-attrition-success-and-retention
-* Log our decisions wrt to scope, data quality, caveats and definitions
-* Perform data munging, address missing values, and reshape our data for Tableau, using Python
-* Build Attrition, Retention, Success Sheets using appropriate filters in Tableau
+* Decide scope, evaluate data quality, and provide caveats and outcome definitions
+* Evaluate raw data and reshape our data for Tableau, using Python
+* Build Attrition, Retention, and Success Charts using filters in Tableau
 * Build a combined KPI measure - selectable by outcome
-* Build a dashboard and refine tooltips to provide our view
-* Provide key insights from this data: highlighting areas of strength or concern for one university (Deakin) relative to other Victorian university outcomes.
+* Arrange a dashboard and refine tooltips to view
+* Provide key insights from this data for Deakin University: describing outcomes relative to other Victorian universities.
 
-From the higher education statistics data, we isolate rates from Victorian education providers, all Australian and Victorian providers, and all Australian Table A providers for this analysis, and exclude individual universities outside Victoria.
+From the higher education statistics data, we isolate our rate measures for this analysis from: 
+* Victorian education providers 
+* all Australian and Victorian providers 
+* all Australian Table A providers
 
-We set out our outcomes as follows:
+We exclude any individual universities outside Victoria.
+
+Our outcomes are:
 
 * **attrition rate (A):** [define] 
 * **success rate (S):** [define]
 * **retention rate (R):** [define]
-* **% change (in A,S,R respectively) over the data span - data from years 2014-2024 respectively:** [define]
+* **% change (in A,S,R respectively) over the data span - data from years 2014-2024 for each outcome respectively:** [define]
 
 <br>
 <br>
@@ -59,14 +64,12 @@ We set out our outcomes as follows:
 Deakin University shows steadily improved success rates across domestic and overseas student cohorts over time. 
 In its domestic cohort, Deakin has improved attrition rates over the previous 10 years, consistent with the leading Victorian providers. 
 
-However, its overseas student cohort has been affected by factors - unknown purely from this analysis - that have increased attrition for overseas students. 
-This differs between Deakin and the leading Victorian providers. 
+However, its overseas student cohort has been affected by factors - unknown purely from this analysis - that have led to increased attrition for overseas students. This attrition rate differs between Deakin and the leading Victorian providers. 
 
-Deakin's attrition rate changes over this time are most similar to Federation University's attrition pattern concurrent with the Victorian Covid lockdown period - though less pronounced in magnitude. 
-This suggests that there may be factors that have affected overseas student attrition at some Universities and not others over this period within Victoria.
+Deakin's overseas student attrition rate changes over this time are most similar to Federation University's attrition pattern, concurrent with the Victorian Covid lockdown period - though this is lower in magnitude. 
+This may suggest that there are external factors that have affected overseas student attrition at some Universities and not others over this period within Victoria.
 
-It may be beneficial to segment the overseas student cohort to better assess how students are clustered with respect to attrition and success. 
-It may be that attrition has left a remaining group of students who were contributing to raising the success rate. 
+It may be beneficial to segment the overseas student cohort to better assess how students are clustered with respect to attrition and success. It may be the case that overseas student attrition has left a remaining group of students who contribute to raising the success rate. 
 
 <br>
 <br>
