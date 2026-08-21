@@ -217,7 +217,10 @@ ___
 
 # Building the Dashboard <a name="tableau-application"></a>
 
-Our dashboard will consist of 4 sections from their respective sheets, with 3 filters: Institution (which includes averages), Student Type, and KPI: one of A,S or R for viewing movements.
+Our dashboard will consist of 4 sections from their respective sheets, with 3 filters: 
+* Institution (which includes averages) 
+* Student Type 
+* KPI: one of A,S or R for viewing 10-year movements.
 
 The very first thing we need to do is check Tableau's interpretation of our data types. This is a simple variable type check for our 5 fields. 
 
