@@ -245,7 +245,8 @@ We create filters using the parameters defined as:
 "Measure Type":
 [Measure Type] = [Student Type]
 
-"Earliest Value": { FIXED [Institution], [Measure Family], [Measure Type] :
+"Earliest Value":
+{ FIXED [Institution], [Measure Family], [Measure Type] :
     MIN( IF [Year] = 
             { FIXED [Institution], [Measure Family], [Measure Type] : MIN([Year]) }
          THEN [Value]
