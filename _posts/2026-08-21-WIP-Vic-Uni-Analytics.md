@@ -5,7 +5,7 @@ image: "/posts/deakin-proj.png"
 tags: [Tableau, EDA, Data Viz, Python]
 ---
 
-In this project we build a dashboard using publically available education data to assess student outcomes across universities in Victoria, Australia with a finer focus on Deakin University.  
+In this project we build a dashboard in Tableau using publically available education data to assess student outcomes across universities in Victoria, Australia with a finer focus on Deakin University.  
 
 # Table of contents
 
@@ -30,6 +30,7 @@ We aim to describe historic patterns and trends by bachelor student cohort: dome
 
 <br>
 <br>
+
 ### Actions <a name="overview-actions"></a>
 
 We'll: 
@@ -45,10 +46,10 @@ From the higher education statistics data, we isolate rates from Victorian educa
 
 We set out our outcomes as follows:
 
-**attrition rate (A):** [define] 
-**success rate (S):** [define]
-**retention rate (R):** [define]
-**% change (in A,S,R respectively) over the data span - data from years 2014-2024 respectively:** [define]
+* **attrition rate (A):** [define] 
+* **success rate (S):** [define]
+* **retention rate (R):** [define]
+* **% change (in A,S,R respectively) over the data span - data from years 2014-2024 respectively:** [define]
 
 <br>
 <br>
@@ -73,6 +74,7 @@ It may be that attrition has left a remaining group of students who were contrib
 ___
 
 <br>
+
 # Data Overview & Preparation  <a name="data-overview"></a>
 
 In the public Australian Government Department of Education Data : Selected Higher Education Statistics Data , we have an *Attrition, Success and Retention* worksheet showing rates for all Australian private and public higher education providers.
@@ -87,6 +89,7 @@ In the code below, we:
 * Reshape the wide-format data, giving us a long-format dataset ready for import to Tableau 
 
 <br>
+
 ```python
 
 ## Load library
@@ -133,7 +136,9 @@ def reshape_sheet(df, family_keyword):
     # Give final tidy structure
     return df_long[["Institution", "Year", "MeasureFamily", "MeasureType", "Value"]]
 ```
+
 <br>
+
 ```python
 # --------------------------------------------
 # Load all sheets
@@ -172,8 +177,11 @@ df_all = pd.concat([df_A_long, df_R_long, df_S_long], ignore_index=True)
 df_all.to_excel("ASRlong.xlsx", index=False)
 
 ```
+
 <br>
+
 A sample of this data (the first 10 rows) can be seen below:
+
 <br>
 <br>
 
@@ -189,7 +197,10 @@ A sample of this data (the first 10 rows) can be seen below:
 | RMIT University (3034) | 2014 | Attrition | Dom | 10.3 |
 | Swinburne University of Technology (2177) | 2014 | Attrition | Dom | 24.54 |
 | The University of Melbourne (3036) | 2014 | Attrition | Dom | 3.5 |
+
 <br>
+<br>
+
 In the DataFrame we have:
 
 * Institution
@@ -199,9 +210,11 @@ In the DataFrame we have:
 * Value (the rate measure outcome value)
 
 This data is now formatted as one sheet to be read into Tableau.
+
 ___
 
 <br>
+
 # Building the Dashboard <a name="tableau-application"></a>
 
 Our dashboard will consist of 4 sections from their respective sheets, with 3 filters: Institution (which includes averages), Student Type, and KPI: one of A,S or R for viewing movements.
@@ -211,14 +224,17 @@ The very first thing we need to do is check Tableau's interpretation of our data
 We then specify parameters and calculate fields.
 
 <br>
+
 #### Specify Parameters and Calculate Fields : Attrition, Success, and Retention
 
 We create parameters as lists :
 
-Select KPI Family  = List : ["Attrition","Success","Retention"] displayed as : "Attrition","Success","Retention"
-Student Type = List : ["Dom","OS","All"] displayed as : "Domestic", "Overseas", "All"
+* Select KPI Family  = List : ["Attrition","Success","Retention"] displayed as : "Attrition","Success","Retention"
+* Student Type = List : ["Dom","OS","All"] displayed as : "Domestic", "Overseas", "All"
 
-We create filters using these parameters:
+We create filters using the parameters defined as:
+
+```sql
 
 "Measure Type":
 [Measure Type] = [Student Type]
@@ -246,6 +262,8 @@ IF [Measure Family] = [Select KPI Family] THEN
     ([Latest Value] - [Earliest Value]) / [Earliest Value]
 END
 
+```
+
 <br>
 #### Specify Sheets
 
@@ -263,6 +281,8 @@ ___
 # Analysing The Results <a name="tableau-results"></a>
 
 At this point we have everything we need to view the rates for each provider, relative to state and national averages.
+
+The dashboard is viewable here: [<provide tableau public link>]
 
 <br>
 As we can see from the dashboard, there are clear differences in Success, Attrition, and Retention rates between providers. 
