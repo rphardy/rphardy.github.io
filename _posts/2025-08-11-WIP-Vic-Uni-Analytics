@@ -5,7 +5,7 @@ image: "/posts/deakin-proj.png"
 tags: [Tableau, EDA, Python]
 ---
 
-In this project we build a dashboard using publically available education data to assess student outcomes between universities in Victoria, Australia.  
+In this project we build a dashboard using publically available education data to assess student outcomes across universities in Victoria, Australia with a finer focus on Deakin University.  
 
 # Table of contents
 
@@ -14,8 +14,8 @@ In this project we build a dashboard using publically available education data t
     - [Actions](#overview-actions)
     - [Results & Discussion](#overview-results)
 - [01. Data Overview & Preparation](#data-overview)
-- [02. Applying Chi-Square Test For Independence](#chi-square-application)
-- [03. Analysing The Results](#chi-square-results)
+- [02. Building The Dashboard](#tableau-application)
+- [03. Analysing The Results](#tableau-results)
 - [04. Discussion](#discussion)
 
 ___
@@ -24,31 +24,31 @@ ___
 
 ### Context <a name="overview-context"></a>
 
-Our aim is to describe changes in student Attrition, Success, and Retention over a decade using the most recently available data and to compare Deakin University's metrics to those of other Victorian Table A providers, and State and Australian Averages.
+Our aim is to describe changes in student Attrition, Success, and Retention over the previous decade using the most recently available public data and to compare Deakin University's rate metrics to those of other Victorian Table A providers, alongside State and Australian Averages.
 
-We aim to describe historic patterns and trends by bachelor student cohort, domestic or overseas: both pre and post Covid to identify any trends to guide further investigation.
+We aim to describe historic patterns and trends by bachelor student cohort: domestic or overseas, both pre and post Covid, to identify any trends that may guide a deeper investigation.
 
 <br>
 <br>
 ### Actions <a name="overview-actions"></a>
 
 We'll: 
-* Retrieve Victorian and Australian average data from: https://www.education.gov.au/higher-education-statistics/resources/2024-section-15-attrition-success-and-retention
+* Retrieve Victorian and Australian instution and means data from: https://www.education.gov.au/higher-education-statistics/resources/2024-section-15-attrition-success-and-retention
 * Log our decisions wrt to scope, data quality, caveats and definitions
-* Perform data munging, address missing values, and convert Wide to Long format for Tableau using Python
-* Build Attrition, Retention, Success Sheets using appropriate filters
+* Perform data munging, address missing values, and reshape our data for Tableau, using Python
+* Build Attrition, Retention, Success Sheets using appropriate filters in Tableau
 * Build a combined KPI measure - selectable by outcome
-* Build a dashboard and refine tooltips
-* Provide key insights from this data: highlighting areas of strength/concern for one university (Deakin) relative to other Victorian university's outcomes.
+* Build a dashboard and refine tooltips to provide our view
+* Provide key insights from this data: highlighting areas of strength or concern for one university (Deakin) relative to other Victorian university outcomes.
 
-From the higher education statistics data, we isolated rates from Victorian education providers, all Australian and Victorian providers, and all Australian Table A providers for this analysis, and excluded individual universities outside Victoria.
+From the higher education statistics data, we isolate rates from Victorian education providers, all Australian and Victorian providers, and all Australian Table A providers for this analysis, and exclude individual universities outside Victoria.
 
 We set out our outcomes as follows:
 
 **attrition rate (A):** [define] 
 **success rate (S):** [define]
 **retention rate (R):** [define]
-**% change (in A,S,R respectively) over the data span - data from years 2014-2024 respectively):** [define]
+**% change (in A,S,R respectively) over the data span - data from years 2014-2024 respectively:** [define]
 
 <br>
 <br>
@@ -75,29 +75,101 @@ ___
 <br>
 # Data Overview & Preparation  <a name="data-overview"></a>
 
-In the Australian Government Department of Education Data - Selected Higher Education Statistics data, we have an *Attrition, Success and Retention* worksheet showing rates for all Australian private and public higher education providers.
+In the public Australian Government Department of Education Data : Selected Higher Education Statistics Data , we have an *Attrition, Success and Retention* worksheet showing rates for all Australian private and public higher education providers.
 
-For this task, we are looking to compare Victorian institutions so we will just extract the rates for these 9 providers, and exclude universities in other states.
-We can also extract the Victorian, Australian average for each year, and the Australian Table A providers - to provide state and national benchmarks for each rate type.
+For this task, we are looking to compare Victorian institutions so we just extract the rates for these 9 providers, and exclude universities in other states.
+We can also extract the Victorian and Australian average rates for each year, and the Australian Table A providers average rate - to provide state and national benchmarks for each rate type.
 
 In the code below, we:
 
-* Load in the Python libraries we require for importing the data and performing the chi-square test (using scipy)
-* Import the required data from the *campaign_data* table
-* Exclude customers in the control group, giving us a dataset with Mailer 1 & Mailer 2 customers only
+* Load in the Python library and define a function to filter and reshape the data (using pandas)
+* Import the required data and filter it to select the measures we need using the function.
+* Reshape the wide-format data, giving us a long-format dataset ready for import to Tableau 
 
 <br>
 ```python
 
-# install the required python libraries
+## Load library
 import pandas as pd
-from scipy.stats import chi2_contingency, chi2
 
-# import campaign data
-campaign_data = ...
+# --------------------------------------------
+# Define reshape function for a wide excel sheet
+# --------------------------------------------
+def reshape_sheet(df, family_keyword):
+    """
+    Reshape a wide-format sheet into long format.
+    
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        The wide-format dataframe (one sheet).
+    family_keyword : str
+        One of "Attrition", "Retention", "Success".
+    
+    Returns
+    -------
+    pandas.DataFrame
+        Long-format dataframe with columns:
+        Institution, Year, MeasureFamily, MeasureType, Value
+    """
+    
+    # Identify columns belonging to this measure family
+    value_cols = [c for c in df.columns if family_keyword in c]
+    
+    # Melt into long format
+    df_long = df.melt(
+        id_vars=["Institution"],
+        value_vars=value_cols,
+        var_name="Field",
+        value_name="Value"
+    )
+    
+    # Split YYYY_Family_Type
+    df_long[["Year", "MeasureFamily", "MeasureType"]] = df_long["Field"].str.split("_", expand=True)
+    
+    # Convert Year to integer
+    df_long["Year"] = df_long["Year"].astype(int)
+    
+    # Give final tidy structure
+    return df_long[["Institution", "Year", "MeasureFamily", "MeasureType", "Value"]]
+```
+<br>
+```python
+# --------------------------------------------
+# Load all sheets
+# --------------------------------------------
+df_A = pd.read_excel("ASRwide.xlsx", sheet_name="Attrition")
+df_R = pd.read_excel("ASRwide.xlsx", sheet_name="Retention")
+df_S = pd.read_excel("ASRwide.xlsx", sheet_name="Success")
 
-# remove customers who were in the control group
-campaign_data = campaign_data.loc[campaign_data["mailer_type"] != "Control"]
+# --------------------------------------------
+# Apply reshape function 
+# --------------------------------------------
+sheets = {
+    "Attrition": df_A,
+    "Retention": df_R,
+    "Success": df_S
+}
+
+long_tables = {}
+
+for family, df in sheets.items():
+    long_tables[family] = reshape_sheet(df, family)
+
+# Extract each long-format table
+df_A_long = long_tables["Attrition"]
+df_R_long = long_tables["Retention"]
+df_S_long = long_tables["Success"]
+
+# --------------------------------------------
+# Combine in master table
+# --------------------------------------------
+df_all = pd.concat([df_A_long, df_R_long, df_S_long], ignore_index=True)
+
+# ------------------------------------------
+# Export long format for Tableau
+# ------------------------------------------
+df_all.to_excel("ASRlong.xlsx", index=False)
 
 ```
 <br>
@@ -105,20 +177,18 @@ A sample of this data (the first 10 rows) can be seen below:
 <br>
 <br>
 
-| **customer_id** | **campaign_name** | **mailer_type** | **signup_flag** |
-|---|---|---|---|
-| 74 | delivery_club | Mailer1 | 1 |
-| 524 | delivery_club | Mailer1 | 1 |
-| 607 | delivery_club | Mailer2 | 1 |
-| 343 | delivery_club | Mailer1 | 0 |
-| 322 | delivery_club | Mailer2 | 1 |
-| 115 | delivery_club | Mailer2 | 0 |
-| 1 | delivery_club | Mailer2 | 1 |
-| 120 | delivery_club | Mailer1 | 1 |
-| 52 | delivery_club | Mailer1 | 1 |
-| 405 | delivery_club | Mailer1 | 0 |
-| 435 | delivery_club | Mailer2 | 0 |
-
+| **Institution** | **Year** | **MeasureFamily** | **MeasureType** | **Value** |
+|---|---|---|---|---|
+| Australia_Tot_All | 2014 | Attrition | Dom | 15 |
+| Australia_A | 2014 | Attrition | Dom | 15.07 |
+| State_Tot_All | 2014 | Attrition | Dom | 13.38 |
+| Deakin University (3030) | 2014 | Attrition | Dom | 14.41 |
+| Federation University Australia (2154) | 2014 | Attrition | Dom | 22.75 |
+| La Trobe University (3020) | 2014 | Attrition | Dom | 11.43 |
+| Monash University (3035) | 2014 | Attrition | Dom | 6.19 |
+| RMIT University (3034) | 2014 | Attrition | Dom | 10.3 |
+| Swinburne University of Technology (2177) | 2014 | Attrition | Dom | 24.54 |
+| The University of Melbourne (3036) | 2014 | Attrition | Dom | 3.5 |
 <br>
 In the DataFrame we have:
 
