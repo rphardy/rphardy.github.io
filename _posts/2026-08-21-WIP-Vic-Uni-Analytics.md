@@ -333,4 +333,4 @@ It is a caveat to this analysis that it is not immediately clear from this data 
 The success rate for all Australian Table A providers is lower than the Victorian average across all years, and correlates highly with it. 
 When compared to this average, Deakin's formerly lower success rate has improved over the decade and has reached comparable levels to the Australian Table A provider average by 2024. 
  
-From this analysis, we might recommend that segmenting the overseas student population, gathering more data on this cohort, and considering further refinement of statistical methodology used to measure attrition and success, may provide us with deeper insights particularly in this group.
+From this analysis, we might recommend that segmenting the overseas student population, gathering more data on this cohort, and considering further refinement of statistical methodology used to measure attrition and success, may provide us with deeper insights, particularly in this group.
