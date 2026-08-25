@@ -1,7 +1,7 @@
 ---
 layout: post
 title: Assessing Student Outcomes at Victorian Universities 
-image: "/posts/deakin-proj.png"
+image: "/posts/deakin-proj2.png"
 tags: [Tableau, EDA, Data Viz, Python]
 ---
 
