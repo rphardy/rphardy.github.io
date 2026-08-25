@@ -48,6 +48,9 @@ We compare these individual rates to average rates derived from:
 * all Australian and Victorian higher education providers 
 * all Australian Table A providers (that is, all Australian Public University providers)
 
+<br>
+<br>
+
 #### Outcomes
 
 Our outcomes are at the **Sector** level as:
