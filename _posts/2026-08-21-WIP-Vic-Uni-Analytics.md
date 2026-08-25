@@ -102,7 +102,7 @@ We can also extract the Victorian and Australian average rates for each year, an
 In the code below, we:
 
 * Load in the Python library and define a function to filter and reshape the data (using pandas)
-* Import the required data and filter it to select the measures we need using the function.
+* Import the required data and filter it to select the measures we need using the function
 * Reshape the wide-format data, giving us a long-format dataset ready for import to Tableau 
 
 <br>
@@ -234,10 +234,10 @@ ___
 
 # Building the Dashboard <a name="tableau-application"></a>
 
-Our dashboard will consist of 4 sections from their respective sheets, applying 3 filters: 
-* Institution (which includes averages) 
+Our dashboard will consist of 4 sections from 4 sheets, applying 3 filters: 
+* Institution (including the Vic and Aus aggregates) 
 * Student Type 
-* KPI: one of A,S or R for viewing 10-year movements.
+* KPI: one of A,S or R for viewing 10-year movements
 
 The very first thing we need to do is check Tableau's interpretation of our data types. This is a simple variable type check for our 5 fields. 
 
