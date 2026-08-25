@@ -83,7 +83,7 @@ This may suggest that there are external factors that have affected overseas stu
 It may be beneficial to segment the overseas student cohort to better assess how students are clustered with respect to attrition and success.
 Methodological changes to retention calculations in 2018 may account for some of the retention differences pre and post 2018.
 
-While these statistics provide a broad comparison across institutions, alternative statistical methodology to create these measures and further segmentation may be beneficial to investigate these outcomes at university level.
+While these statistics provide a broad comparison across institutions, alternative statistical methodology to create these measures and/or further segmentation may benefit investigating these outcomes at university level.
 
 <br>
 <br>
