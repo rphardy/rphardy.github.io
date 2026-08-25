@@ -296,7 +296,7 @@ ___
 
 At this point we have everything we need to view the rates for each provider, relative to state and national averages.
 
-The dashboard is viewable full-screen [here](https://public.tableau.com/views/Deakin_Proj/BachelorStudentOutcomesVictoria?:language=en-US&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link)
+The dashboard is viewable in full-screen view from [here](https://public.tableau.com/views/Deakin_Proj/BachelorStudentOutcomesVictoria?:language=en-US&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link)
 
 <br>
 As we can see from the dashboard, there are clear differences in Success, Attrition, and Retention rates between individual providers. We discuss these below.
