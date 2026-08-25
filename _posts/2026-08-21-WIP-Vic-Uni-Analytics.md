@@ -51,11 +51,16 @@ We compare these to average rates derived from:
 
 We exclude any individual providers outside Victoria.
 
+#### Outcomes
+
 Our outcomes are at the **Sector** level as:
 
-* **attrition rate (A):** Attrition Rates for a given year are the proportion of students who commenced a course in that year who neither complete in that year or the next year, nor return in the next year. For these rates, it is only those students who were no longer at _any_ institution that are counted as attrited. 
-* **success rate (S):** Success rate for _commencing_ students: The equivalent full‑time student load (EFTSL) of units passed to the EFTSL of units attempted, calculated from commencing students in a given year. 
-* **retention rate (R):** 
+* **attrition rate (A):** Attrition Rates for a given year are the proportion of students who commenced a course in that year who neither complete in that year or the next year, nor return in the next year. For these rates, it is only those students who were no longer at _any_ institution that are counted as attrited.
+   
+* **success rate (S):** Success rate for _commencing_ students: The equivalent full‑time student load (EFTSL) of units passed to the EFTSL of units attempted, calculated from commencing students in a given year.
+  
+* **retention rate (R):** Retention Rates for a given year are the number of students who commenced a course in that year and continued in the next (retained students) as a proportion of all students who commenced a course in the same year and did not complete in that year or the next year.
+  
 * **% change over the data span (in A,S,R separately) : data between years 2014-2024 for each outcome respectively:** The rate in the most recent year (2023 for A and R, 2024 for S) minus the rate in the first year (2014 for A and R, 2015 for S) divided by the rate in the first year (2014 for A and R, 2015 for S).
 
 These rates are published and have been calculated from government linked data: with StudentID linked to Commonwealth Higher Education Student Support Number (CHESSN) to track these outcomes.
@@ -64,6 +69,8 @@ These rates are published and have been calculated from government linked data: 
 <br>
 
 ### Results & Discussion <a name="overview-results"></a>
+
+The completed dashboard can be found [here](https://public.tableau.com/views/Deakin_Proj/BachelorStudentOutcomesVictoria?:language=en-US&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link).
 
 Deakin University shows steadily improved success rates across domestic and overseas student cohorts over time, indicating that for both cohorts, pass rates are rising in students' commencing year. 
 In its domestic cohort, attrition rates reduced over the previous 10 years, consistent with the leading Victorian providers. 
