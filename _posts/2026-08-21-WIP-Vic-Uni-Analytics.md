@@ -34,7 +34,7 @@ We aim to describe historic patterns and trends by bachelor student cohort: dome
 ### Actions <a name="overview-actions"></a>
 
 We'll: 
-* Retrieve Victorian and Australian instution and means data from: https://www.education.gov.au/higher-education-statistics/resources/2024-section-15-attrition-success-and-retention
+* Retrieve Victorian and Australian instution and means data from: The Australian Government Department of Education Higher Education's most recent [release](https://www.education.gov.au/higher-education-statistics/resources/2024-section-15-attrition-success-and-retention)
 * Decide scope, evaluate data quality, and provide caveats and outcome definitions
 * Evaluate raw data and reshape our data for Tableau, using Python
 * Build Attrition, Retention, and Success Charts using filters in Tableau
@@ -296,11 +296,10 @@ ___
 
 At this point we have everything we need to view the rates for each provider, relative to state and national averages.
 
-The dashboard is viewable here: (https://public.tableau.com/views/Deakin_Proj/BachelorStudentOutcomesVictoria?:language=en-US&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link)
+The dashboard is viewable full-screen [here](https://public.tableau.com/views/Deakin_Proj/BachelorStudentOutcomesVictoria?:language=en-US&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link)
 
 <br>
-As we can see from the dashboard, there are clear differences in Success, Attrition, and Retention rates between providers. 
-See below for a discussion of some key takeaways from studying this dashboard. 
+As we can see from the dashboard, there are clear differences in Success, Attrition, and Retention rates between individual providers. We discuss these below.
 
 ___
 
@@ -314,7 +313,7 @@ Despite a small drop in success rate over this period among overseas students, s
 
 Therefore, we might recommend closer inspection of both success and attrition in this overseas student cohort over the 2020-2022 years, to identify the main drivers for this cpncurrent rise in both measures. 
 
-Impacts of Covid and the economic impact of Victoria's lockdowns over this period may have further disadvantaged the students that were less likely than average to succeed in their studies. 
+Impacts of Covid and the economic impact of Victoria's lockdowns over this period may have disadvantaged the students that were less likely than average to succeed in their studies. 
 This could lead to their attrition, and in that scenario, would account for the rise in both the attrition and success rate over this period in the broader OS student cohort. 
 It may be worth investigating this over 2020-2022 further, to support or refute this, and to generate alternate hypotheses around this. 
 
@@ -327,4 +326,4 @@ It is a caveat to this analysis that it is not immediately clear from this data 
 The success rate for all Australian Table A providers is lower than the Victorian average across all years, and correlates highly with it. 
 When compared to this average, Deakin's formerly lower success rate has improved over the decade and has reached comparable levels to the Australian Table A provider average by 2024. 
  
-From this analysis, we might recommend that segmenting the overseas student population, gathering more data on this cohort, and considering further methods to measure attrition and success, may provide us with more insights in this group.
+From this analysis, we might recommend that segmenting the overseas student population, gathering more data on this cohort, and considering further refinement of statistical methodology used to measure attrition and success, may provide us with deeper insights particularly in this group.
