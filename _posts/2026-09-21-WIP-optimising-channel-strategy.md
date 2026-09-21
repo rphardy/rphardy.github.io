@@ -46,11 +46,11 @@ The client needed to answer three specific questions before committing the next 
 Rather than running a single usage-split analysis and calling it done, we built a phased decision framework — deliberately structured so that easy calls could be made quickly, and only genuinely ambiguous cases absorbed further analytical effort.
 
 - **Phase 0** instrumented a single GA4 property across app and web, so cross-platform comparison was possible at all
-- **Phase 1** used the raw usage split to fast-track any feature with an unambiguous gap
-- **A stakeholder checkpoint** redirected scope where usage data alone wasn't the right lens — for example, a feature with a legislative communication obligation
+- **Phase 1** used the raw usage split to fast-track a decision on any feature with an unambiguous gap
+- **A stakeholder checkpoint** redirected scope where usage data alone wasn't the only consideration — for example, a feature with a legislative communication obligation
 - **Phase 2** added device, timing, and user-type context to the features that weren't resolved by the raw split
 - **Phase 3** synthesised every finding into a confidence-tiered recommendation, flagging which conclusions were directly observed and which were inferred
-- **Scenario: PIA Passed** — once a privacy impact assessment cleared — linked web sessions to physical smartcard touch-on/off data, to confirm (rather than assume) the one recommendation that had rested on an inference
+- **Scenario: PIA Passed** — once a privacy impact assessment cleared — linked web sessions to physical smartcard touch-on/off data, to confirm (rather than assume) the one recommendation that had rested on an inference. The PIA was submitted for this during Phase 0.
 
 ### Results {#overview-results}
 
@@ -81,11 +81,11 @@ The one feature originally deferred by capacity, rather than by evidence, remain
 
 Throughout this write-up we refer to a recommendation's **confidence tier**:
 
-- **Observed** — built directly from a measured event (a click, a usage rate, an action taken). No interpretation layer sits between the data and the conclusion.
+- **Observed** — built directly from a measured event (a click, a usage rate, an action taken). Nothing open to interpretation between the data and the conclusion.
 - **Directional** — built from a pattern that's real, but whose *meaning* required an inference (e.g. "this usage pattern probably reflects planning ahead, rather than idle browsing").
 - **Confirmed** — a directional finding that was subsequently checked against an independent, harder form of evidence and held up.
 
-This distinction matters more than it might first appear: two of our three headline decisions rested entirely on Observed evidence, and only one ever needed the Confirmed tier at all.
+This distinction is important as: two of our three headline decisions rested entirely on Observed evidence, and only one ever needed the Confirmed tier at all.
 
 ---
 
