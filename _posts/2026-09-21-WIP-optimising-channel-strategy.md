@@ -2,7 +2,7 @@
 layout: post
 title: Optimising App & Web Channel Strategy Using GA4 & Smartcard Data
 image: /img/posts/channel-strategy-title-img.png
-tags: | Digital Analytics | GA4 | Transport | Decision Framework | Python |
+tags: [Digital Analytics,GA4,Transport,Decision Framework,Python]
 ---
 
 Our client, a state transport department, runs its journey planning, ticketing, and disruption alert services on both a mobile app and a website. With limited development capacity, they needed to know where to invest — and where to stop.
