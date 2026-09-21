@@ -43,14 +43,14 @@ The client needed to answer three specific questions before committing the next 
 
 ### Actions {#overview-actions}
 
-Rather than running a single usage-split analysis, we built a phased decision framework — deliberately structured so that easy calls could be made quickly, and only genuinely ambiguous cases absorbed further analytical effort.
+Rather than running a single usage-split analysis, we built a phased decision framework: deliberately structured so that easy calls could be made quickly, and only genuinely ambiguous cases would take further analytical effort.
 
-- **Phase 0** instrumented a single GA4 property across app and web, so cross-platform comparison was possible at all. The GA4 property takes app and web input as data streams. A PIA to link myki touch-on/touch-off data at this step was initiated.
-- **Phase 1** used the raw usage split to fast-track a decision on any feature with an unambiguous gap
-- **A stakeholder checkpoint** redirected scope where usage data alone wasn't the only consideration — for example, a feature with a legislative communication obligation
+- **Phase 0** instrumented a single GA4 property across app and web, so cross-platform comparison was possible at all. The GA4 property ideally takes app and web input as data streams in one property. A PIA to link myki touch-on/touch-off data was viable at this step, so this was also initiated here.
+- **Phase 1** used the raw usage split to fast-track a decision on any feature with an unambiguous web-app use gap
+- **A stakeholder checkpoint** redirected scope where usage data alone wasn't the only consideration. E.g, for a feature with a legislative communication obligation
 - **Phase 2** added device, timing, and user-type context to the features that weren't resolved by the raw split
 - **Phase 3** synthesised every finding into a confidence-tiered recommendation, flagging which conclusions were directly observed and which were inferred
-- **Scenario: PIA Passed** — once a privacy impact assessment cleared — linked web sessions to physical smartcard touch-on/off data, to confirm (rather than assume) the one recommendation that had rested on an inference. The PIA was submitted for this during Phase 0.
+- **Scenario: PIA Passed** (once a privacy impact assessment cleared) linked web sessions to physical smartcard touch-on/off data, to confirm (rather than assume) the one recommendation that had rested on an inference. The PIA was submitted for this during Phase 0.
 
 ### Results {#overview-results}
 
@@ -110,7 +110,7 @@ We tracked usage across app and web using a single custom GA4 event, parameteris
 
 We are answering three related but distinct questions (platform exclusivity, dev priority, retirement) using a single phased evidence pipeline, rather than treating each as a separate analysis.
 
-As the underlying evidence ranges from directly observed usage splits through to physical movement data, we structured the work as a sequence of gated phases — each one only escalating to the next when the current evidence genuinely couldn't resolve the question:
+As the underlying evidence ranges from directly observed usage splits through to physical movement data, we structured the work as a sequence of gated phases, each one only escalating to the next when the current evidence genuinely couldn't resolve the question:
 
 - Phase 0: Instrumentation
 - Phase 1: GA4 baseline (Gate 1 — fast-track check)
@@ -171,9 +171,68 @@ Instrumentation confirmed clean. The 21-day baseline window began.
 
 Raw `feature_engaged` usage rate by platform, across all four features, over the 21-day window.
 
-```
-# TODO: insert the GA4 Data API / BigQuery export query
-# used to compute feature usage rate by platform
+This query works in three stages, each building on the last:
+
+1. Pull the raw event data, and sort every user into "app" or "web." GA4 records the app's two platforms (iOS and Android) separately, but we report app to web as a whole. The first step collapses iOS and Android into a single APP group, keeping web as its own group. This grouping is then reused identically in every later query, so the same person is never counted as "app" in one chart and split apart in another.
+
+2. Count two different things, side by side. From that pool of events, the query counts:
+* Active users — anyone who did anything at all on each platform in the 21-day window (the denominator)
+* Engaged users — of those, anyone who specifically interacted with one of the four features being studied, broken out feature by feature (the numerator)
+
+3. Divide the two, per feature and per platform. The final step joins those two counts together and calculates what share of each platform's active users actually engaged with each feature — this is the usage rate percentage that appears as the bars in the Phase 1 chart.
+
+```sql
+-- Feature usage rate by platform (app vs web), 21-day baseline window
+-- Source: GA4 BigQuery export (events_* daily tables)
+--
+-- platform_group collapses ANDROID + IOS into APP here, and this
+-- exact definition needs to be reused unchanged in every downstream
+-- query
+
+WITH baseline_events AS (
+  SELECT
+    event_date,
+    user_pseudo_id,
+    event_name,
+    event_params,
+    device.category AS device_category,
+    event_timestamp,
+    user_first_touch_timestamp,
+    CASE
+      WHEN platform IN ('ANDROID', 'IOS') THEN 'APP'
+      WHEN platform = 'WEB' THEN 'WEB'
+    END AS platform_group
+  FROM `project.analytics_XXXXXXX.events_*`
+  WHERE _TABLE_SUFFIX BETWEEN '20260811' AND '20260831'
+),
+
+active_users AS (
+  SELECT
+    platform_group,
+    COUNT(DISTINCT user_pseudo_id) AS active_users
+  FROM baseline_events
+  GROUP BY platform_group
+),
+
+feature_users AS (
+  SELECT
+    platform_group,
+    (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') AS feature_name,
+    COUNT(DISTINCT user_pseudo_id) AS engaged_users
+  FROM baseline_events
+  WHERE event_name = 'feature_engaged'
+  GROUP BY platform_group, feature_name
+)
+
+SELECT
+  f.feature_name,
+  f.platform_group AS platform,
+  f.engaged_users,
+  a.active_users,
+  ROUND(f.engaged_users / a.active_users * 100, 1) AS usage_rate_pct
+FROM feature_users f
+JOIN active_users a USING (platform_group)
+ORDER BY f.feature_name, f.platform_group;
 ```
 
 ![alt text](/img/posts/phase1-feature-usage-baseline.png "Feature Usage Baseline by Platform")
