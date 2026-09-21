@@ -49,7 +49,7 @@ For this analysis, we assume that it is established that Transport Victoria is a
 
 Rather than running a single usage-split analysis, we built a phased decision framework: deliberately structured so that easy calls could be made quickly, and only genuinely ambiguous cases would take further analytical effort.
 
-- **Phase 0** instrumented a single GA4 property across app and web, so cross-platform comparison was possible at all. The GA4 property ideally takes app and web input as data streams in one property. A PIA to link myki touch-on/touch-off data was viable at this step, so this was also initiated here.
+- **Phase 0** audited and found a single GA4 property across app and web, so cross-platform comparison was possible.
 - **Phase 1** used the raw usage split to fast-track a decision on any feature with an unambiguous web-app use gap
 - **A stakeholder checkpoint** redirected scope where usage data alone wasn't the only consideration. E.g, for a feature with a legislative communication obligation
 - **Phase 2** added device, timing, and user-type context to the features that weren't resolved by the raw split
@@ -79,7 +79,7 @@ Every one of the three questions above now has an evidence-backed answer:
 
 ### Growth/Next Steps {#overview-growth}
 
-The real_time_departures feature originally deferred by capacity (its app use vs web use), rather than by evidence, remains open — the case for continued investment there is already strong, but was never formally re-examined once resources were redirected elsewhere. The smartcard linkage pipeline built for this project is reusable for future features without repeating the governance approval process.
+The real_time_departures feature originally deferred by capacity (its app use vs web use) remains open. The case for continued investment there is already strong, but was notformally re-examined once development resources were redirected elsewhere. The smartcard linkage pipeline built for this project is reusable for future features without repeating the governance approval process.
 
 ### Key Definition {#overview-definition}
 
