@@ -33,9 +33,13 @@ Our client, a state transport department, runs its journey planning, ticketing, 
 
 ### Context {#overview-context}
 
-Our client's digital team maintains four core features across their app and website: real-time departures, saved trips, disruption alerts, and the journey planner itself. Each feature had usage on both platforms, but no one could say with confidence whether that reflected genuine need for both, or just usage nobody had looked at closely enough to challenge.
+In mid-2025, Transport Victoria (formerly Public Transport Victoria) retired its standalone PTV website, combining journey planning, real-time information, and myki services in the single transport.vic.gov.au domain, citing the old site's end-of-life state and the ongoing cost of maintaining duplicate platforms. The PTV app, however, remains a separately maintained product, with its own release cycle and its own challenges regarding real-time accuracy and journey planning reliability.
 
-The client needed to answer three specific questions before committing the next development cycle:
+This case study uses that real, already partly-resolved situation as its motivating context. Here we aim to illustrate how a structured, phased GA4 analysis could approach what remains open: where the app itself still warrants investment, and where it may not. All data, figures, and dashboards below are mock — built to represent the kind of GA4 and myki data we would have direct access to under this engagement, and to demonstrate the analytical method against a known and verifiable real-world backdrop, not to represent Transport Victoria's actual reported results.
+
+Transport Victoria's digital team maintains four core features across their app and website: real-time departures, saved trips, disruption alerts, and the journey planner itself. Each feature had usage on both platforms, but this analysis is motivated by questioning whether that reflected genuine need for both, or just usage not yet viewed closely enough to challenge.
+
+For this analysis, we assume that it is established that Transport Victoria is a client that needed to answer three specific questions before committing the next development cycle:
 
 1. **Platform exclusivity** — should a feature exist on app only, web only, or both?
 2. **Dev priority** — within available capacity, what gets built next?
