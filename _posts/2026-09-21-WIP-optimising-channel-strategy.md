@@ -22,7 +22,7 @@ Our client, a state transport department, runs its journey planning, ticketing, 
 - [05. Stakeholder Checkpoint](#checkpoint)
 - [06. Phase 2: Proxy-Context Analysis](#phase-2)
 - [07. Phase 3: Synthesis & Confidence Tiers](#phase-3)
-- [08. Scenario B: Smartcard Linkage](#scenario-b)
+- [08. Scenario: PIA Passed: Smartcard Linkage](#scenario-b)
 - [09. Decision Summary](#decision-summary)
 - [10. Application](#application)
 - [11. Growth & Next Steps](#growth-next-steps)
@@ -50,7 +50,7 @@ Rather than running a single usage-split analysis and calling it done, we built 
 - **A stakeholder checkpoint** redirected scope where usage data alone wasn't the right lens — for example, a feature with a legislative communication obligation
 - **Phase 2** added device, timing, and user-type context to the features that weren't resolved by the raw split
 - **Phase 3** synthesised every finding into a confidence-tiered recommendation, flagging which conclusions were directly observed and which were inferred
-- **Scenario B** — once a privacy impact assessment cleared — linked web sessions to physical smartcard touch-on/off data, to confirm (rather than assume) the one recommendation that had rested on an inference
+- **Scenario: PIA Passed** — once a privacy impact assessment cleared — linked web sessions to physical smartcard touch-on/off data, to confirm (rather than assume) the one recommendation that had rested on an inference
 
 ### Results {#overview-results}
 
@@ -102,7 +102,7 @@ We tracked usage across app and web using a single custom GA4 event, parameteris
 | lookup_lead_time_min | Event parameter | For real-time departures: minutes between the lookup and actual departure — a proxy for imminent vs. planned travel |
 | alert_channel | Event parameter | For disruption alerts: push, in-app banner, or web banner |
 | alert_action | Event parameter | What the user did with an alert: dismissed, viewed detail, or replanned their trip |
-| touch-on / touch-off | External (smartcard system) | Physical boarding/alighting records, linked in Scenario B to confirm one finding |
+| touch-on / touch-off | External (smartcard system) | Physical boarding/alighting records, linked in Scenario: PIA passed - to confirm one finding |
 
 ---
 
@@ -117,7 +117,7 @@ As the underlying evidence ranges from directly observed usage splits through to
 - Stakeholder checkpoint
 - Phase 2: Proxy-context layer
 - Phase 3: Synthesis (Gate 3A — confidence tiering)
-- Scenario B: Smartcard linkage (Gate 2B — sample-size check)
+- Scenario PIA Passed: Smartcard linkage (Gate 2B — sample-size check)
 
 ---
 
@@ -229,7 +229,7 @@ Two recommendations shipped as final at this stage. One was flagged, explicitly,
 
 ---
 
-# Scenario B: Smartcard Linkage {#scenario-b}
+# Scenario: PIA passed - Smartcard Linkage {#scenario-b}
 
 Once a pending privacy impact assessment cleared, we had access to physical smartcard touch-on/touch-off records — a genuinely independent form of evidence for the one flagged recommendation.
 
