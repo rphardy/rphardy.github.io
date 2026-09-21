@@ -5,7 +5,7 @@ image: /img/posts/channel-strategy-title-img.png
 tags: [Digital Analytics,GA4,Transport,Decision Framework,Python]
 ---
 
-Our client, a state transport department, runs its journey planning, ticketing, and disruption alert services on both a mobile app and a website. With limited development capacity, they needed to know where to invest — and where to stop.
+Our client, a state transport department, runs its journey planning, ticketing, and disruption alert services on both a mobile app and a website. With limited development capacity, they needed to know where to invest — and where to hold off.
 
 # Table of contents
 
@@ -43,9 +43,9 @@ The client needed to answer three specific questions before committing the next 
 
 ### Actions {#overview-actions}
 
-Rather than running a single usage-split analysis and calling it done, we built a phased decision framework — deliberately structured so that easy calls could be made quickly, and only genuinely ambiguous cases absorbed further analytical effort.
+Rather than running a single usage-split analysis, we built a phased decision framework — deliberately structured so that easy calls could be made quickly, and only genuinely ambiguous cases absorbed further analytical effort.
 
-- **Phase 0** instrumented a single GA4 property across app and web, so cross-platform comparison was possible at all
+- **Phase 0** instrumented a single GA4 property across app and web, so cross-platform comparison was possible at all. The GA4 property takes app and web input as data streams. A PIA to link myki touch-on/touch-off data at this step was initiated.
 - **Phase 1** used the raw usage split to fast-track a decision on any feature with an unambiguous gap
 - **A stakeholder checkpoint** redirected scope where usage data alone wasn't the only consideration — for example, a feature with a legislative communication obligation
 - **Phase 2** added device, timing, and user-type context to the features that weren't resolved by the raw split
@@ -64,24 +64,24 @@ Every one of the three questions above now has an evidence-backed answer:
 
 **Dev priority**
 
-- Highest priority: a channel-effectiveness fix, backed directly by measured user-action data
-- Next: a conversion-focused addition to the web journey planner, backed by the smartcard linkage
-- No further build recommended for the two lower-priority features this cycle
+- Highest priority: a channel-effectiveness fix, backed directly by measured user-action data: implement a "replan trip" call to action in the web banner.
+- Next: a conversion-focused addition to the web journey planner, backed by the smartcard linkage: add an app download link at the point of web planning.
+- No further build recommended for the two lower-priority features this cycle.
 
 **Retirement candidates**
 
-- One feature flagged for a formal retirement review in 6 months
+- One feature flagged for a formal retirement review in 6 months: saved_trips
 - No feature met the bar for immediate removal
 
 ### Growth/Next Steps {#overview-growth}
 
-The one feature originally deferred by capacity, rather than by evidence, remains open — the case for continued investment there is already strong, but was never formally re-examined once resources were redirected elsewhere. The smartcard linkage pipeline built for this project is reusable for future features without repeating the governance approval process.
+The real_time_departures feature originally deferred by capacity (its app use vs web use), rather than by evidence, remains open — the case for continued investment there is already strong, but was never formally re-examined once resources were redirected elsewhere. The smartcard linkage pipeline built for this project is reusable for future features without repeating the governance approval process.
 
 ### Key Definition {#overview-definition}
 
 Throughout this write-up we refer to a recommendation's **confidence tier**:
 
-- **Observed** — built directly from a measured event (a click, a usage rate, an action taken). Nothing open to interpretation between the data and the conclusion.
+- **Observed** — built directly from a measured event (a click, a usage rate, an action taken). Nothing left open to interpretation between the data and the conclusion.
 - **Directional** — built from a pattern that's real, but whose *meaning* required an inference (e.g. "this usage pattern probably reflects planning ahead, rather than idle browsing").
 - **Confirmed** — a directional finding that was subsequently checked against an independent, harder form of evidence and held up.
 
