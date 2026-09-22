@@ -258,6 +258,8 @@ JOIN active_users a USING (platform_group)
 ORDER BY f.feature_name, f.platform_group;
 ```
 
+### Baseline Feature Usage Dashboard
+
 ![alt text](/img/posts/phase1-feature-usage-baseline.png "Feature Usage Baseline by Platform")
 
 ### Gate 1 — Fast-Track Check
