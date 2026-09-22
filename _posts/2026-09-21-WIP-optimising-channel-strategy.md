@@ -278,13 +278,13 @@ One of four features resolved on Observed evidence alone. The remaining three ca
 
 Not every open question is best answered by more usage data. At this point the remaining three features were reviewed with the client team directly, and the scope was adjusted:
 
-- **journey_planner** was escalated as the clear priority, since its raw usage pattern actively contradicted the working assumption about how app and web were being used
+- **journey_planner** was escalated as the clear development priority, since its raw usage pattern actively contradicted the working assumption about how app and web were being used
 - **disruption_alerts** was reframed entirely — from a platform-investment question to a channel-effectiveness question — after the communications team flagged a consistency obligation across all alert channels that usage share alone couldn't capture
-- **real_time_departures** was deferred, with the team accepting its already-strong directional case rather than spending further analytical effort on a foregone conclusion
+- **real_time_departures** was deferred, with the team accepting its already-strong usage gap (82% vs 34%) as sufficient for app-first development, rather than spending further analytical effort on this split given that **journey_planner** had been escalated.
 
 ### Outcome
 
-Two features proceed to Phase 2 on their original terms; one proceeds on reframed terms; one exits the active analysis by decision, not by evidence.
+**journey_planner** proceeds to Phase 2 on its original terms; **disruption_alerts** proceeds on reframed terms; **real_time_departures** exits the active analysis by decision, not by evidence.
 
 ---
 
