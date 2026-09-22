@@ -123,6 +123,25 @@ As the underlying evidence ranges from directly observed usage splits through to
 - Phase 3: Synthesis (Gate 3A — confidence tiering)
 - Scenario PIA Passed: Smartcard linkage (Gate 2B — sample-size check)
 
+Each phase breaks down into two kinds of work: a **query**, which produces a number from the data, and a **judgement**, where a human applies a threshold the data alone can't set. Several of the gates (Gate 1, Gate 2B) exist specifically to hand a decision to a person (e.g., to an analyst/stakeholder).
+
+| # | Type | Step |
+|---|---|---|
+| 1 | Query | Baseline usage-rate query — all four features, both platforms |
+| 2 | Judgement | Apply Gate 1's threshold — saved_trips fast-tracked, others carried forward |
+| 3 | Query | Interaction-depth breakdown for saved_trips, supporting the fast-track call |
+| 4 | Judgement | Stakeholder checkpoint — scope set: escalate, reframe, or defer each remaining feature |
+| 5 | Query | Device, timing, and new-vs-returning cuts on the escalated feature |
+| 6 | Query | Channel/outcome breakdown for the reframed feature |
+| 7 | Judgement | Synthesise findings into confidence tiers; apply Gate 3A |
+| 8 | — | Wait for privacy approval — independent of the analysis itself |
+| 9 | Query | Gate 2B sample-size check — join to smartcard records on hashed ID |
+| 10 | Judgement | Assess whether the linked sample clears the bar for individual-level analysis |
+| 11 | Query | Deterministic (Tier 1) join and cohort (Tier 2) correlation, run independently |
+| 12 | Judgement | Compare tiers, close Gate 3A, and package the final decision matrix |
+
+Step 8 is a wait — the Scenario A recommendation was already delivered and actionable before anyone knew the smartcard linkage would become possible.
+
 ---
 
 # Phase 0: Instrumentation {#phase-0}
