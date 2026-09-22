@@ -274,13 +274,13 @@ One of four features resolved on Observed evidence alone. The remaining three ca
 
 ---
 
-# Stakeholder Checkpoint {#checkpoint}
+### Stakeholder Checkpoint
 
 Not every open question is best answered by more usage data. At this point the remaining three features were reviewed with the client team directly, and the scope was adjusted:
 
-- One feature was escalated as the clear priority, since its raw usage pattern actively contradicted the working assumption about how app and web were being used
-- One feature was reframed entirely — from a platform-investment question to a channel-effectiveness question — after the communications team flagged a consistency obligation across all alert channels that usage share alone couldn't capture
-- One feature was deferred, with the team accepting its already-strong directional case rather than spending further analytical effort on a foregone conclusion
+- **journey_planner** was escalated as the clear priority, since its raw usage pattern actively contradicted the working assumption about how app and web were being used
+- **disruption_alerts** was reframed entirely — from a platform-investment question to a channel-effectiveness question — after the communications team flagged a consistency obligation across all alert channels that usage share alone couldn't capture
+- **real_time_departures** was deferred, with the team accepting its already-strong directional case rather than spending further analytical effort on a foregone conclusion
 
 ### Outcome
 
