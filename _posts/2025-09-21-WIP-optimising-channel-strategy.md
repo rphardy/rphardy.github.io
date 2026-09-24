@@ -101,14 +101,17 @@ We tracked usage across app and web using a single custom GA4 event, parameteris
 |---|---|---|
 | feature_engaged | Event | Fires whenever a user meaningfully interacts with one of the four core features |
 | feature_name | Event parameter | Which feature: real_time_departures, saved_trips, disruption_alerts, or journey_planner |
-| platform | Event parameter | iOS app, Android app, or web (further split into mobile web / desktop web) |
 | interaction_depth | Event parameter | How far the user got: viewed, interacted, or completed |
 | lookup_lead_time_min | Event parameter | For real-time departures: minutes between the lookup and actual departure — a proxy for imminent vs. planned travel |
 | alert_channel | Event parameter | For disruption alerts: push, in-app banner, or web banner |
 | alert_action | Event parameter | What the user did with an alert: dismissed, viewed detail, or replanned their trip |
-| touch-on / touch-off | External (smartcard system) | Physical boarding/alighting records, linked in Scenario: PIA passed - to confirm one finding |
+| platform | Native (GA4 export) | GA4's own field — ANDROID, IOS, or WEB — collapsed to APP/WEB throughout this analysis |
+| device.category | Native (GA4 export) | GA4's own field, used to split web traffic into mobile web vs desktop web in Phase 2 |
+| touch-on / touch-off | External (smartcard system) | Physical boarding/alighting records, linked in Scenario B to confirm one finding |
 
 ---
+
+platform and device.category are collected automatically by GA4 and don't require custom dimension registration, whereas the six event parameters above them are custom registered.
 
 # Methodology Overview {#methodology-overview}
 
@@ -292,7 +295,7 @@ Not every open question is best answered by more usage data. At this point the r
 
 ### Evidence Gathered
 
-For the escalated feature, we layered in device category (mobile web vs. desktop web), time-of-day clustering, and new-vs-returning user share — none of which are visible in a simple platform split.
+For the escalated feature, **journey_planner**, we layered in device category (mobile web vs. desktop web), time-of-day clustering, and new-vs-returning user share — none of which are visible in a simple platform split.
 
 ```
 # TODO: insert the GA4 Explore / BigQuery query used to
@@ -305,7 +308,7 @@ For the escalated feature, we layered in device category (mobile web vs. desktop
 
 Mobile web and desktop web turned out to behave almost identically to each other, and neither resembled the app — ruling out "it's just a desktop tool" as the explanation. Timing told the real story: web usage clustered off-peak regardless of device, while app usage clustered tightly around commute peaks. New-user share on web was also disproportionately high, suggesting web frequently serves as a first-touch surface rather than a habitual one.
 
-For the reframed feature, we broke down alert delivery channel against the outcome that followed each alert (dismissed, viewed in detail, or trip replanned) — a direct measurement, requiring no interpretation layer at all.
+For the reframed feature, **disruption_alerts**, we broke down alert delivery channel against the outcome that followed each alert (dismissed, viewed in detail, or trip replanned) — a direct measurement, requiring no interpretation layer at all.
 
 ### Outcome
 
