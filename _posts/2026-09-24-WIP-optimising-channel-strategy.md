@@ -104,7 +104,7 @@ We tracked usage across app and web using a single custom GA4 event, parameteris
 | interaction_depth | Event parameter | How far the user got: viewed, interacted, or completed |
 | lookup_lead_time_min | Event parameter | For real-time departures: minutes between the lookup and actual departure — a proxy for imminent vs. planned travel |
 | alert_channel | Event parameter | For disruption alerts: push, in-app banner, or web banner |
-| alert_action | Event parameter | What the user did with an alert: dismissed, viewed detail, or replanned their trip |
+| alert_action | Event parameter | What the user did with an alert: dismissed, viewed detail, or replanned their trip. Each alert interaction fires one event, so events map one-to-one to outcomes |
 | platform | Native (GA4 export) | GA4's own field — ANDROID, IOS, or WEB — collapsed to APP/WEB throughout this analysis |
 | device.category | Native (GA4 export) | GA4's own field, used to split web traffic into mobile web vs desktop web in Phase 2 |
 | touch-on / touch-off | External (smartcard system) | Physical boarding/alighting records, linked in Scenario B to confirm one finding |
@@ -493,8 +493,8 @@ GROUP BY
 Together, these three cuts rule out three different alternative explanations for the same question. Device category rules out "it's simply a desktop tool." Timing rules out "web usage happens throughout the day the same way app usage does, just less often." New-vs-returning rules out "the same core group of people just prefer using web sometimes." What's left, once each of those is set aside, is the interpretation carried into the next section: that web usage clusters ahead of travel, largely independent of which device it happens on, and disproportionately belongs to people who haven't installed the app yet.
 
 ### Disruption Alerts: Channel and Outcome
-
-For the reframed feature, no first look was needed: alert channel and the action taken are both recorded directly on each engagement event, with each alert interaction firing a single `feature_engaged` event that carries its final `alert_action`. Events therefore map one-to-one to outcomes, and both cuts are simple shares of `disruption_alerts` engagement events.
+ 
+For the reframed feature, no first look was needed: alert channel and the action taken are both recorded directly on each engagement event, so both cuts are simple shares of `disruption_alerts` engagement events (one event per alert interaction, as defined in the Data Overview).
 
 Push accounts for 68% of alert engagement events, against 22% for the in-app banner and 10% for the web banner.
 
