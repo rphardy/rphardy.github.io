@@ -107,7 +107,7 @@ We tracked usage across app and web using a single custom GA4 event, parameteris
 | alert_action | Event parameter | What the user did with an alert: dismissed, viewed detail, or replanned their trip. Each alert interaction fires one event, so events map one-to-one to outcomes |
 | platform | Native (GA4 export) | GA4's own field — ANDROID, IOS, or WEB — collapsed to APP/WEB throughout this analysis |
 | device.category | Native (GA4 export) | GA4's own field, used to split web traffic into mobile web vs desktop web in Phase 2 |
-| touch-on / touch-off | External (smartcard system) | Physical boarding/alighting records, linked in Scenario B to confirm one finding |
+| touch-on / touch-off | External (smartcard system) | Physical boarding/alighting records, linked in Scenario B (PIA Passed) to confirm one finding |
 
 ---
 
