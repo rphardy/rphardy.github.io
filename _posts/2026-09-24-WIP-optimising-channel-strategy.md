@@ -284,7 +284,7 @@ One of four features resolved on Observed evidence alone. The remaining three ca
 
 ---
 
-### Stakeholder Checkpoint
+# Stakeholder Checkpoint {#checkpoint}
 
 Not every open question is best answered by more usage data. At this point the remaining three features were reviewed with the client team directly, and the scope was adjusted:
 
