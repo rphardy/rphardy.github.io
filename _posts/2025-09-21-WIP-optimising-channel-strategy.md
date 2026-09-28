@@ -79,7 +79,7 @@ Every one of the three questions above now has an evidence-backed answer:
 
 ### Growth/Next Steps {#overview-growth}
 
-The real_time_departures feature originally deferred by capacity (its app use vs web use) remains open. The case for continued investment there is already strong, but was notformally re-examined once development resources were redirected elsewhere. The smartcard linkage pipeline built for this project is reusable for future features without repeating the governance approval process.
+The real_time_departures feature originally deferred by capacity (its app use vs web use) remains open. The case for continued investment there is already strong, but was not formally re-examined once development resources were redirected elsewhere. The smartcard linkage pipeline built for this project is reusable for future features without repeating the governance approval process.
 
 ### Key Definition {#overview-definition}
 
@@ -111,7 +111,7 @@ We tracked usage across app and web using a single custom GA4 event, parameteris
 
 ---
 
-platform and device.category are collected automatically by GA4 and don't require custom dimension registration, whereas the six event parameters above them are custom registered.
+platform and device.category are collected automatically by GA4 and don't require custom dimension registration, whereas the five event parameters above them are custom registered.
 
 # Methodology Overview {#methodology-overview}
 
@@ -228,16 +228,20 @@ WITH baseline_events AS (
       WHEN platform IN ('ANDROID', 'IOS') THEN 'APP'
       WHEN platform = 'WEB' THEN 'WEB'
     END AS platform_group
-  FROM `project.analytics_XXXXXXX.events_*`
-  WHERE _TABLE_SUFFIX BETWEEN '20260811' AND '20260831'
+  FROM 
+   `project.analytics_XXXXXXX.events_*`
+  WHERE 
+   _TABLE_SUFFIX BETWEEN '20260811' AND '20260831'
 ),
 
 active_users AS (
   SELECT
     platform_group,
     COUNT(DISTINCT user_pseudo_id) AS active_users
-  FROM baseline_events
-  GROUP BY platform_group
+  FROM 
+   baseline_events
+  GROUP BY 
+   platform_group
 ),
 
 feature_users AS (
@@ -245,9 +249,12 @@ feature_users AS (
     platform_group,
     (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') AS feature_name,
     COUNT(DISTINCT user_pseudo_id) AS engaged_users
-  FROM baseline_events
-  WHERE event_name = 'feature_engaged'
-  GROUP BY platform_group, feature_name
+  FROM 
+   baseline_events
+  WHERE 
+   event_name = 'feature_engaged'
+  GROUP BY 
+   platform_group, feature_name
 )
 
 SELECT
@@ -297,10 +304,195 @@ Not every open question is best answered by more usage data. At this point the r
 
 For the escalated feature, **journey_planner**, we layered in device category (mobile web vs. desktop web), time-of-day clustering, and new-vs-returning user share — none of which are visible in a simple platform split.
 
+### First Look to Formal Query
+
+Each cut started with a simple pass at the data, before deciding what — if anything — needed to be measured more precisely. All three read from a persisted copy of the Phase 1 baseline events, created once with the same platform grouping and 21-day window, so every query below inherits identical definitions.
+
+```sql
+-- Persists the Phase 1 baseline events so every query below reads from
+-- one shared definition of platform_group and the 21-day window.
+-- The window and platform_group logic must match the Phase 1 query.
+
+CREATE OR REPLACE TABLE `project.analytics_derived.baseline_events_21d` AS
+SELECT
+  event_date,
+  user_pseudo_id,
+  event_name,
+  event_params,
+  device.category AS device_category,
+  event_timestamp,
+  user_first_touch_timestamp,
+  CASE
+    WHEN platform IN ('ANDROID', 'IOS') THEN 'APP'
+    WHEN platform = 'WEB' THEN 'WEB'
+  END AS platform_group
+FROM 
+ `project.analytics_XXXXXXX.events_*`
+WHERE 
+ _TABLE_SUFFIX BETWEEN '20260811' AND '20260831';
 ```
-# TODO: insert the GA4 Explore / BigQuery query used to
-# compute the device, timing, and new-vs-returning cuts
+
+**Device category** began with a plain count of engaged users on mobile web against desktop web, which favoured mobile web.
+
+```sql
+SELECT 
+ device_category, 
+ COUNT(DISTINCT user_pseudo_id) AS engaged_users
+FROM 
+ `project.analytics_derived.baseline_events_21d`
+WHERE 
+ platform_group = 'WEB' AND event_name = 'feature_engaged'
+  AND (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') = 'journey_planner'
+GROUP BY 
+ device_category;
 ```
+
+Dividing each device's engaged users by its own active-user base told a different story: desktop web engages at 93%, mobile web at 81% — both high, and much closer together than the raw counts suggested.
+
+```sql
+WITH active_users AS (
+  SELECT 
+   device_category, 
+   COUNT(DISTINCT user_pseudo_id) AS active_users
+  FROM 
+   `project.analytics_derived.baseline_events_21d`
+  WHERE 
+   platform_group = 'WEB'
+  GROUP BY 
+   device_category
+),
+
+feature_users_by_device AS (
+  SELECT 
+   device_category, 
+   COUNT(DISTINCT user_pseudo_id) AS engaged_users
+  FROM 
+   `project.analytics_derived.baseline_events_21d`
+  WHERE 
+   platform_group = 'WEB' AND event_name = 'feature_engaged'
+    AND (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') = 'journey_planner'
+  GROUP BY 
+   device_category
+)
+
+SELECT
+  f.device_category,
+  f.engaged_users,
+  a.active_users,
+  ROUND(f.engaged_users / a.active_users * 100, 1) AS usage_rate_pct
+FROM 
+ feature_users_by_device f
+JOIN active_users a USING (device_category)
+ORDER BY 
+ f.device_category;
+```
+
+**Timing** showed its shape early. A simple per-hour count of `journey_planner` activity, split by platform, produced two distinct patterns: app usage spiking sharply around the AM and PM commute windows, web usage sitting comparatively flat and tilted toward evenings.
+
+```sql
+SELECT
+  platform_group,
+  EXTRACT(HOUR FROM TIMESTAMP_MICROS(event_timestamp) AT TIME ZONE 'Australia/Melbourne') AS local_hour,
+  COUNT(*) AS events
+FROM 
+ `project.analytics_derived.baseline_events_21d`
+WHERE 
+ event_name = 'feature_engaged'
+  AND (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') = 'journey_planner'
+GROUP BY 
+ platform_group, 
+ local_hour
+ORDER BY 
+ platform_group, 
+ local_hour;
+```
+
+That shape set the peak/off-peak boundary used for the rest of the analysis (7–9am, 4–6pm). Splitting further by device within web sharpened the comparison: 27% peak / 73% off-peak on mobile, 19% peak / 81% off-peak on desktop — both far closer to each other than either is to the app's 72% peak share.
+
+```sql
+WITH classified_events AS (
+  SELECT
+    platform_group,
+    device_category,
+    CASE
+      WHEN EXTRACT(HOUR FROM TIMESTAMP_MICROS(event_timestamp) AT TIME ZONE 'Australia/Melbourne') BETWEEN 7 AND 9
+        OR EXTRACT(HOUR FROM TIMESTAMP_MICROS(event_timestamp) AT TIME ZONE 'Australia/Melbourne') BETWEEN 16 AND 18
+      THEN 'peak' ELSE 'off_peak'
+    END AS time_window
+  FROM 
+   `project.analytics_derived.baseline_events_21d`
+  WHERE 
+   event_name = 'feature_engaged'
+    AND (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') = 'journey_planner'
+)
+
+SELECT
+  platform_group,
+  device_category,
+  time_window,
+  ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (PARTITION BY platform_group, device_category), 1) AS usage_rate_pct
+FROM 
+ classified_events
+GROUP BY 
+ platform_group, 
+ device_category, 
+ time_window
+ORDER BY 
+ platform_group, 
+ device_category, 
+ time_window;
+```
+
+**New versus returning** users showed a large, clear gap from the outset.
+
+```sql
+-- Baseline window start (2026-08-11) must match the _TABLE_SUFFIX
+-- start date used to create baseline_events_21d
+SELECT
+  platform_group,
+  TIMESTAMP_MICROS(user_first_touch_timestamp) >= TIMESTAMP('2026-08-11') AS is_new,
+  COUNT(*) AS engagement_events
+FROM 
+ `project.analytics_derived.baseline_events_21d`
+WHERE 
+ event_name = 'feature_engaged'
+  AND (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') = 'journey_planner'
+GROUP BY 
+ platform_group, 
+ is_new;
+```
+
+Counting once per user rather than once per engagement event held the split at 81% returning on app against 64% new on web — close to the inverse of each other.
+
+```sql
+-- Baseline window start (2026-08-11) must match the _TABLE_SUFFIX
+-- start date used to create baseline_events_21d
+WITH engaged_users AS (
+  SELECT DISTINCT
+    platform_group,
+    user_pseudo_id,
+    user_first_touch_timestamp
+  FROM 
+   `project.analytics_derived.baseline_events_21d`
+  WHERE 
+   event_name = 'feature_engaged'
+    AND (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') = 'journey_planner'
+)
+
+SELECT
+  platform_group,
+  TIMESTAMP_MICROS(user_first_touch_timestamp) >= TIMESTAMP('2026-08-11') AS is_new,
+  ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (PARTITION BY platform_group), 1) AS usage_rate_pct
+FROM 
+ engaged_users
+GROUP BY 
+ platform_group, 
+ is_new;
+```
+
+Together, these three cuts rule out three different alternative explanations for the same question. Device category rules out "it's simply a desktop tool." Timing rules out "web usage happens throughout the day the same way app usage does, just less often." New-vs-returning rules out "the same core group of people just prefer using web sometimes." What's left, once each of those is set aside, is the interpretation carried into the next section: that web usage clusters ahead of travel, largely independent of which device it happens on, and disproportionately belongs to people who haven't installed the app yet.
+
+### Proxy-Context Dashboard
 
 ![alt text](/img/posts/phase2-proxy-context-analysis.png "Proxy-Context Analysis")
 
