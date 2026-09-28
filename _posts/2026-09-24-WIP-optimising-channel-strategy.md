@@ -492,6 +492,54 @@ GROUP BY
 
 Together, these three cuts rule out three different alternative explanations for the same question. Device category rules out "it's simply a desktop tool." Timing rules out "web usage happens throughout the day the same way app usage does, just less often." New-vs-returning rules out "the same core group of people just prefer using web sometimes." What's left, once each of those is set aside, is the interpretation carried into the next section: that web usage clusters ahead of travel, largely independent of which device it happens on, and disproportionately belongs to people who haven't installed the app yet.
 
+### Disruption Alerts: Channel and Outcome
+
+For the reframed feature, no first look was needed: alert channel and the action taken are both recorded directly on each engagement event, with each alert interaction firing a single `feature_engaged` event that carries its final `alert_action`. Events therefore map one-to-one to outcomes, and both cuts are simple shares of `disruption_alerts` engagement events.
+
+Push accounts for 68% of alert engagement events, against 22% for the in-app banner and 10% for the web banner.
+
+```sql
+SELECT
+  (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'alert_channel') AS alert_channel,
+  COUNT(*) AS engagement_events,
+  ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 1) AS usage_rate_pct
+FROM 
+ `project.analytics_derived.baseline_events_21d`
+WHERE 
+ event_name = 'feature_engaged'
+  AND (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') = 'disruption_alerts'
+GROUP BY alert_channel
+ORDER BY engagement_events DESC;
+```
+
+The outcome that follows each alert differs sharply by channel: a push alert leads to a replanned trip 41% of the time, against 18% for the web banner, which is dismissed 74% of the time.
+
+```sql
+WITH alert_events AS (
+  SELECT
+    (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'alert_channel') AS alert_channel,
+    (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'alert_action') AS alert_action
+  FROM 
+   `project.analytics_derived.baseline_events_21d`
+  WHERE event_name = 'feature_engaged'
+    AND (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') = 'disruption_alerts'
+)
+
+SELECT
+  alert_channel,
+  alert_action,
+  COUNT(*) AS engagement_events,
+  ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (PARTITION BY alert_channel), 1) AS usage_rate_pct
+FROM 
+ alert_events
+GROUP BY 
+ alert_channel, 
+ alert_action
+ORDER BY 
+ alert_channel, 
+ alert_action;
+```
+
 ### Proxy-Context Dashboard
 
 ![alt text](/img/posts/phase2-proxy-context-analysis.png "Proxy-Context Analysis")
