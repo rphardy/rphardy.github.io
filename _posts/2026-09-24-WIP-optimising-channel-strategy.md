@@ -665,7 +665,7 @@ Of 36,260 web `journey_planner` users, 2,176 could be linked — 6.0%. That's to
 ### Tier 1 — Deterministic Check
 
 ```sql
-#TODO: Add section
+#TODO: Add section - structured as close to DTP's production myki <-> GA4 linkage methodology as possible.
 ```
 ### Tier 2 — Cohort Check
 
