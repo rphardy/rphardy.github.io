@@ -22,7 +22,7 @@ Our client, a state transport department, runs its journey planning, ticketing, 
 - [05. Stakeholder Checkpoint](#checkpoint)
 - [06. Phase 2: Proxy-Context Analysis](#phase-2)
 - [07. Phase 3: Synthesis & Confidence Tiers](#phase-3)
-- [08. Scenario: PIA Passed: Smartcard Linkage](#scenario-b)
+- [08. Scenario B: Smartcard Linkage](#scenario-b)
 - [09. Decision Summary](#decision-summary)
 - [10. Application](#application)
 - [11. Growth & Next Steps](#growth-next-steps)
@@ -54,7 +54,7 @@ Rather than running a single usage-split analysis, we built a phased decision fr
 - **A stakeholder checkpoint** redirected scope where usage data alone wasn't the only consideration. E.g, for a feature with a legislative communication obligation
 - **Phase 2** added device, timing, and user-type context to the features that weren't resolved by the raw split
 - **Phase 3** synthesised every finding into a confidence-tiered recommendation, flagging which conclusions were directly observed and which were inferred
-- **Scenario: PIA Passed** (once a privacy impact assessment cleared) linked web sessions to physical smartcard touch-on/off data, to confirm (rather than assume) the one recommendation that had rested on an inference. The PIA was submitted for this during Phase 0.
+- **Scenario B** (once a privacy impact assessment cleared) linked web sessions to physical smartcard touch-on/off data, to confirm (rather than assume) the one recommendation that had rested on an inference. The PIA was submitted for this during Phase 0.
 
 ### Results {#overview-results}
 
@@ -89,7 +89,12 @@ Throughout this write-up we refer to a recommendation's **confidence tier**:
 - **Directional** — built from a pattern that's real, but whose *meaning* required an inference (e.g. "this usage pattern probably reflects planning ahead, rather than idle browsing").
 - **Confirmed** — a directional finding that was subsequently checked against an independent, harder form of evidence and held up.
 
-This distinction is important as: two of our three headline decisions rested entirely on Observed evidence, and only one ever needed the Confirmed tier at all.
+This distinction is important as: two of our three headline decisions rested entirely on Observed evidence and only one ever needed the Confirmed tier.
+
+We also distinguish two **scenarios**, depending on whether the pending privacy approval had cleared at the time a recommendation was delivered:
+
+- **Scenario A** — the report as it could be delivered using GA4 data alone, before the privacy impact assessment (PIA) cleared. Complete and actionable on its own; any Directional finding ships with its confidence explicitly labelled.
+- **Scenario B** — the same report, updated once the PIA cleared and smartcard touch-on/touch-off data became available to test the one Directional finding against.
 
 ---
 
@@ -108,7 +113,7 @@ We tracked usage across app and web using a single custom GA4 event, parameteris
 | platform | Native (GA4 export) | GA4's own field — ANDROID, IOS, or WEB — collapsed to APP/WEB throughout this analysis |
 | device.category | Native (GA4 export) | GA4's own field, used to split web traffic into mobile web vs desktop web in Phase 2 |
 | user_id | Native (GA4 export) | GA4's login-only identity field, set from a hashed internal account ID at sign-in; bridges to smartcard data in Scenario B — absent for anonymous sessions |
-| touch-on / touch-off | External (smartcard system) | Physical boarding/alighting records, linked in Scenario B (PIA Passed) to confirm one finding |
+| touch-on / touch-off | External (smartcard system) | Physical boarding/alighting records, linked in Scenario B to confirm one finding |
 | account_card_bridge | External (ticketing system) | Maps each account_id to its linked card_id_hashed; one account may hold multiple cards. Joined to user_id in Scenario B's Gate 2B and Tier 1 checks |
 
 ---
@@ -126,7 +131,7 @@ As the underlying evidence ranges from directly observed usage splits through to
 - Stakeholder checkpoint
 - Phase 2: Proxy-context layer
 - Phase 3: Synthesis (Gate 3A — confidence tiering)
-- Scenario PIA Passed: Smartcard linkage (Gate 2B — sample-size check)
+- Scenario B: Smartcard linkage (Gate 2B — sample-size check)
 
 Each phase breaks down into two kinds of work: a **query**, which produces a number from the data, and a **judgement**, where a human applies a threshold the data alone can't set. Several of the gates (Gate 1, Gate 2B) exist specifically to hand a decision to a person (e.g., to an analyst/stakeholder).
 
@@ -606,7 +611,7 @@ Two recommendations shipped as final at this stage. One was flagged, explicitly,
 
 ---
 
-# Scenario B: PIA Passed - Smartcard Linkage {#scenario-b}
+# Scenario B: Smartcard Linkage {#scenario-b}
 
 Once a pending privacy impact assessment cleared, we had access to physical smartcard touch-on/touch-off records — a genuinely independent form of evidence for the one flagged recommendation.
 
