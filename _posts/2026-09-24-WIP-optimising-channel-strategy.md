@@ -107,11 +107,13 @@ We tracked usage across app and web using a single custom GA4 event, parameteris
 | alert_action | Event parameter | What the user did with an alert: dismissed, viewed detail, or replanned their trip. Each alert interaction fires one event, so events map one-to-one to outcomes |
 | platform | Native (GA4 export) | GA4's own field — ANDROID, IOS, or WEB — collapsed to APP/WEB throughout this analysis |
 | device.category | Native (GA4 export) | GA4's own field, used to split web traffic into mobile web vs desktop web in Phase 2 |
+| user_id | Native (GA4 export) | GA4's login-only identity field, set from a hashed internal account ID at sign-in; bridges to smartcard data in Scenario B — absent for anonymous sessions |
 | touch-on / touch-off | External (smartcard system) | Physical boarding/alighting records, linked in Scenario B (PIA Passed) to confirm one finding |
+| account_card_bridge | External (ticketing system) | Maps each account_id to its linked card_id_hashed; one account may hold multiple cards. Joined to user_id in Scenario B's Gate 2B and Tier 1 checks |
 
 ---
 
-platform and device.category are collected automatically by GA4 and don't require custom dimension registration, whereas the five event parameters above them are custom registered.
+platform, user_id and device.category are collected automatically by GA4 and don't require custom dimension registration, whereas the five event parameters above them are custom registered.
 
 # Methodology Overview {#methodology-overview}
 
@@ -634,43 +636,255 @@ Once a pending privacy impact assessment cleared, we had access to physical smar
 
 ### Sample-Size Check (Gate 2B)
 
-Only a small share of web `journey_planner` users could be linked to a smartcard — consistent with the new-user skew already found in Phase 2, since a first-touch audience is far less likely to already be logged in.
+Only a small share of web journey_planner users could be linked to a smartcard — consistent with the new-user skew already found in Phase 2, since a first-touch audience is far less likely to already be logged in. 
+
+The link runs through GA4's user_id field, set only at login, bridged to the ticketing system's account-to-card mapping; where an account holds more than one card, the user is still counted just once.
 
 ```sql
--- How many web journey_planner-engaged users can be linked to a
--- smartcard via a logged-in account?
 WITH web_journey_planner_users AS (
   SELECT 
    DISTINCT user_pseudo_id
   FROM 
    `project.analytics_derived.baseline_events_21d`
   WHERE 
-   platform_group = 'WEB' AND event_name = 'feature_engaged' AND (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') = 'journey_planner'
+   platform_group = 'WEB' AND 
+   event_name = 'feature_engaged' AND
+   (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') = 'journey_planner'
+),
+
+logged_in_sessions AS (
+  SELECT 
+   DISTINCT 
+    user_pseudo_id, user_id
+   FROM 
+    `project.analytics_derived.baseline_events_21d`
+   WHERE 
+    user_id IS NOT NULL
+),
+
+linked_accounts AS (
+  SELECT 
+   DISTINCT account_id
+  FROM 
+   `project.transport_core.account_card_bridge`
+),
+
+linked_users AS (
+  SELECT 
+   DISTINCT l.user_pseudo_id
+  FROM 
+   logged_in_sessions l
+  JOIN linked_accounts a ON l.user_id = a.account_id
 )
 
 SELECT
   COUNT(DISTINCT w.user_pseudo_id) AS journey_planner_web_users,
-  COUNT(DISTINCT l.card_id_hashed) AS linked_users,
-  ROUND(COUNT(DISTINCT l.card_id_hashed) / COUNT(DISTINCT w.user_pseudo_id) * 100, 1) AS linked_pct
+  COUNT(DISTINCT lu.user_pseudo_id) AS linked_users,
+  ROUND(COUNT(DISTINCT lu.user_pseudo_id) / COUNT(DISTINCT w.user_pseudo_id) * 100, 1) AS linked_pct
 FROM 
  web_journey_planner_users w
-LEFT JOIN `project.analytics_derived.user_card_link` l USING (user_pseudo_id);
-
+LEFT JOIN linked_users lu USING (user_pseudo_id);
 ```
 
-Of 36,260 web `journey_planner` users, 2,176 could be linked — 6.0%. That's too thin to support segmenting the deterministic check any further (by device, by time-of-day, and so on), but still enough for one aggregate figure. This ruled out a fully segmented individual-level analysis, but still supported the single Tier 1 rate that follows.
-
-### Two Independent Checks
-
-**Deterministic check** (small, precise): among linked users, a web planning session was followed by a touch-on at the planned origin within 24 hours at roughly 3.5 times the rate of a matched baseline with no session.
-
-**Cohort check** (large, less precise): across the full population, web session volume correlated with touch-on volume at a next-day lag — for both mobile and desktop web alike — while app usage correlated almost immediately, consistent with in-transit use.
+Of 36,260 web `journey_planner` users, 2,176 could be linked — 6.0%. That's too thin to support segmenting the deterministic check any further (by device, by time-of-day, and so on), but still enough for one aggregate figure.
 
 ### Tier 1 — Deterministic Check
 
+For the 2,176 linked users, each web `journey_planner` session is checked against a touch-on at that same session's planned origin stop, within 24 hours. An account with more than one linked card counts as matched if *any* of its cards touch on — matching is at the person level, not the card level.
+
 ```sql
-#TODO: Add section - structured as close to DTP's production myki <-> GA4 linkage methodology as possible.
+WITH logged_in_sessions AS (
+  SELECT 
+   DISTINCT user_pseudo_id, 
+   user_id
+  FROM 
+   `project.analytics_derived.baseline_events_21d`
+  WHERE 
+   user_id IS NOT NULL
+),
+
+user_cards AS (
+  SELECT 
+   l.user_pseudo_id, 
+   b.card_id_hashed
+  FROM 
+   logged_in_sessions l
+  JOIN `project.transport_core.account_card_bridge` b ON l.user_id = b.account_id
+),
+
+planning_sessions AS (
+  SELECT
+    e.user_pseudo_id,
+    e.event_timestamp AS planned_at,
+    (SELECT value.string_value FROM UNNEST(e.event_params) WHERE key = 'origin_stop_id') AS origin_stop_id
+  FROM 
+   `project.analytics_derived.baseline_events_21d` e
+  JOIN user_cards uc USING (user_pseudo_id)
+  WHERE 
+   e.platform_group = 'WEB' AND 
+   e.event_name = 'feature_engaged' AND
+   (SELECT value.string_value FROM UNNEST(e.event_params) WHERE key = 'feature_name') = 'journey_planner'
+  GROUP BY 
+   e.user_pseudo_id, 
+   e.event_timestamp, 
+   origin_stop_id
+),
+
+matched AS (
+  SELECT
+    p.user_pseudo_id,
+    p.planned_at,
+    MIN(t.event_timestamp) AS first_touch_on
+  FROM 
+   planning_sessions p
+  JOIN user_cards uc ON uc.user_pseudo_id = p.user_pseudo_id
+  LEFT JOIN `project.smartcard_derived.touch_events` t
+    ON t.card_id_hashed = uc.card_id_hashed
+    AND t.stop_id = p.origin_stop_id
+    AND t.touch_type = 'on'
+    AND t.event_timestamp BETWEEN p.planned_at AND TIMESTAMP_ADD(p.planned_at, INTERVAL 24 HOUR)
+  GROUP BY 
+   p.user_pseudo_id, 
+   p.planned_at
+)
+
+SELECT
+  COUNT(*) AS planning_sessions,
+  COUNTIF(first_touch_on IS NOT NULL) AS matched_within_24h,
+  COUNTIF(TIMESTAMP_DIFF(first_touch_on, planned_at, HOUR) <= 3) AS matched_within_3h,
+  ROUND(COUNTIF(first_touch_on IS NOT NULL) / COUNT(*) * 100, 1) AS match_rate_24h_pct
+FROM 
+ matched;
 ```
+
+Across 2,910 web `journey_planner` sessions from linked users, 39% were followed by a touch-on at the planned origin within 24 hours; 22% within 3 hours.
+
+That 39% only means something against a baseline. Rather than comparing to an unrelated stop or a user's single most-frequented one — either of which would distort the comparison in a different direction — each of the same 2,176 users gets one randomly chosen day on which they *didn't* plan a trip, paired with one of their own real origin stops and a random reference time, then checked against the identical 24-hour window.
+
+```sql
+WITH linked_users AS (
+  SELECT 
+   DISTINCT l.user_pseudo_id
+  FROM (
+    SELECT 
+     DISTINCT user_pseudo_id, user_id
+    FROM 
+     `project.analytics_derived.baseline_events_21d`
+    WHERE 
+     user_id IS NOT NULL
+  ) l
+  JOIN `project.transport_core.account_card_bridge` b ON l.user_id = b.account_id
+),
+
+user_planning_days AS (
+  SELECT 
+   DISTINCT user_pseudo_id,
+   DATE(TIMESTAMP_MICROS(event_timestamp), 'Australia/Melbourne') AS planning_date
+  FROM 
+   `project.analytics_derived.baseline_events_21d`
+  WHERE 
+   platform_group = 'WEB' AND 
+   event_name = 'feature_engaged' AND
+   (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') = 'journey_planner' AND
+   user_pseudo_id IN (SELECT user_pseudo_id FROM linked_users)
+),
+
+user_origin_stops AS (
+  SELECT 
+   DISTINCT user_pseudo_id,
+   (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'origin_stop_id') AS origin_stop_id
+  FROM 
+   `project.analytics_derived.baseline_events_21d`
+  WHERE 
+   platform_group = 'WEB' AND 
+   event_name = 'feature_engaged' AND
+   (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') = 'journey_planner' AND
+   user_pseudo_id IN (SELECT user_pseudo_id FROM linked_users)
+),
+
+baseline_days AS (
+  SELECT 
+   u.user_pseudo_id, 
+   d AS candidate_date
+  FROM 
+   linked_users u
+  CROSS JOIN UNNEST(GENERATE_DATE_ARRAY('2026-08-11', '2026-08-31')) AS d
+  LEFT JOIN user_planning_days p
+    ON p.user_pseudo_id = u.user_pseudo_id AND p.planning_date = d
+  WHERE p.user_pseudo_id IS NULL
+),
+
+baseline_day_pick AS (
+  SELECT 
+   user_pseudo_id, 
+   candidate_date
+  FROM 
+   baseline_days
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY user_pseudo_id ORDER BY RAND()) = 1
+),
+
+baseline_stop_pick AS (
+  SELECT 
+   user_pseudo_id, 
+   origin_stop_id
+  FROM 
+   user_origin_stops
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY user_pseudo_id ORDER BY RAND()) = 1
+),
+
+baseline_reference AS (
+  SELECT
+   d.user_pseudo_id,
+   s.origin_stop_id,
+   TIMESTAMP_ADD(
+     TIMESTAMP(d.candidate_date, 'Australia/Melbourne'),
+     INTERVAL CAST(RAND() * 86400 AS INT64) SECOND
+   ) AS pseudo_planned_at
+  FROM 
+   baseline_day_pick d
+  JOIN baseline_stop_pick s USING (user_pseudo_id)
+),
+
+user_cards AS (
+  SELECT 
+   DISTINCT l.user_pseudo_id, 
+   b.card_id_hashed
+  FROM (
+   SELECT DISTINCT user_pseudo_id, user_id
+   FROM `project.analytics_derived.baseline_events_21d`
+   WHERE user_id IS NOT NULL
+  ) l
+  JOIN 
+   `project.transport_core.account_card_bridge` b ON l.user_id = b.account_id
+),
+
+baseline_matched AS (
+  SELECT
+   r.user_pseudo_id,
+   r.pseudo_planned_at,
+   MIN(t.event_timestamp) AS first_touch_on
+  FROM 
+   baseline_reference r
+  JOIN user_cards uc ON uc.user_pseudo_id = r.user_pseudo_id
+  LEFT JOIN `project.smartcard_derived.touch_events` t
+   ON t.card_id_hashed = uc.card_id_hashed
+   AND t.stop_id = r.origin_stop_id
+   AND t.touch_type = 'on'
+   AND t.event_timestamp BETWEEN r.pseudo_planned_at AND TIMESTAMP_ADD(r.pseudo_planned_at, INTERVAL 24 HOUR)
+  GROUP BY 
+   r.user_pseudo_id, r.pseudo_planned_at
+)
+
+SELECT
+  COUNT(*) AS baseline_instances,
+  COUNTIF(first_touch_on IS NOT NULL) AS matched_within_24h,
+  ROUND(COUNTIF(first_touch_on IS NOT NULL) / COUNT(*) * 100, 1) AS baseline_match_rate_pct
+FROM 
+ baseline_matched;
+```
+
+The baseline rate comes back at 11% — putting the treatment's 39% at roughly a 3.5× lift. One asymmetry is worth stating plainly here: the treatment's planning timestamp is real, but the baseline's is a synthetic stand-in — a uniformly random moment on a day the user didn't plan a trip. It's the closest symmetric comparison available, not a perfect one, and the 39% and 11% shouldn't be read as equally precise measurements of the same kind.
+
 ### Tier 2 — Cohort Check
 
 Tier 1 only reaches the 6% of `journey_planner` web users who are logged in and myki-linked — a population skewed toward habitual users, which is the opposite of the group Phase 2 found web usage actually over-represents. Tier 2 checks the same question at population scale instead, using only aggregate hourly volume on both sides, with no individual matching at all.
@@ -819,7 +1033,11 @@ One limitation of this to note as reported, is that a correlation computed over 
 
 ### Outcome
 
-Both checks pointed the same direction. The flagged recommendation moved from Directional to Confirmed — the recommendation itself didn't change, but its evidentiary basis did.
+Tier 1's 39% touch-on rate against an 11% baseline is a real lift, but it rests on a thin, wide-margin sample of only 2,176 linked users — precise about direction, less precise about magnitude. Tier 2 answers a different question entirely, using the full population with no identity linkage at all: it finds that a `journey_planner` session's timing relationship to a touch-on peaks at 24–27 hours later on web, regardless of device, and peaks almost immediately, at 1 hour, on app.
+
+Neither check alone would have closed Gate 3A. A small deterministic sample can show the right direction without ruling out that its 6% linked population isn't representative; a population-scale correlation can show the right timing pattern without ever confirming that any single trip was actually planned in advance. Together, they cover each other's blind spot — Tier 1 confirms the *magnitude* for the subset who logged in, Tier 2 confirms the *pattern* holds across everyone, including the 94% Tier 1 could never see.
+
+With both pointing the same direction, journey_planner moves from Directional to Confirmed. The recommendation itself doesn't change — dual-platform, with an app-download prompt at the point of web planning — but it now rests on two independent forms of evidence rather than one inferred pattern.
 
 ---
 
