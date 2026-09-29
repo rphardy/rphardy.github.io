@@ -140,7 +140,7 @@ Each phase breaks down into two kinds of work: a **query**, which produces a num
 | 6 | Query | Channel/outcome breakdown for the reframed feature |
 | 7 | Judgement | Synthesise findings into confidence tiers; apply Gate 3A |
 | 8 | — | Wait for privacy approval — independent of the analysis itself |
-| 9 | Query | Gate 2B sample-size check — join to smartcard records on hashed ID |
+| 9 | Query | Gate 2B sample-size check — join via GA4's user_id, bridged to the ticketing system's account-card mapping |
 | 10 | Judgement | Assess whether the linked sample clears the bar for individual-level analysis |
 | 11 | Query | Deterministic (Tier 1) join and cohort (Tier 2) correlation, run independently |
 | 12 | Judgement | Compare tiers, close Gate 3A, and package the final decision matrix |
