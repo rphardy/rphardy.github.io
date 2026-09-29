@@ -278,6 +278,56 @@ Any feature with an unambiguous platform gap (roughly, under 10% usage on one pl
 
 **saved_trips** cleared this outright — 9% engagement on web against 61% on app — and was resolved here, permanently, regardless of anything that followed.
 
+Interaction depth on web sharpens the case further: of that 9%, most only viewed the feature without creating a saved trip.
+
+A user who completes a saved trip typically also triggers a `viewed` and an `interacted` event along the way, so counting every event at every depth would count the same person three times. Each user is instead classified by the deepest stage they reached, ranking `completed` above `interacted` above `viewed`, before counting:
+
+```sql
+WITH active_users AS (
+  SELECT 
+   COUNT(DISTINCT user_pseudo_id) AS active_users
+  FROM 
+   `project.analytics_derived.baseline_events_21d`
+  WHERE 
+   platform_group = 'WEB'
+),
+
+user_max_depth AS (
+  SELECT
+    user_pseudo_id,
+    MAX(
+      CASE (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'interaction_depth')
+        WHEN 'completed' THEN 3
+        WHEN 'interacted' THEN 2
+        WHEN 'viewed' THEN 1
+      END
+    ) AS depth_rank
+  FROM 
+   `project.analytics_derived.baseline_events_21d`
+  WHERE 
+   platform_group = 'WEB' AND event_name = 'feature_engaged' AND (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') = 'saved_trips'
+  GROUP BY 
+   user_pseudo_id
+)
+
+SELECT
+  CASE depth_rank WHEN 3 THEN 'completed' WHEN 2 THEN 'interacted' WHEN 1 THEN 'viewed' END AS interaction_depth,
+  COUNT(DISTINCT user_pseudo_id) AS engaged_users,
+  a.active_users,
+  ROUND(COUNT(DISTINCT user_pseudo_id) / a.active_users * 100, 1) AS usage_rate_pct
+FROM 
+ user_max_depth
+CROSS JOIN 
+ active_users a
+GROUP BY 
+ depth_rank, 
+ a.active_users
+ORDER BY 
+ depth_rank DESC;
+```
+
+This returns 7% viewed, 1.5% interacted, and 0.5% completed — summing to the 9% headline rate, with no user counted twice.
+
 ### Outcome
 
 One of four features resolved on Observed evidence alone. The remaining three carried forward.
@@ -580,18 +630,186 @@ Once a pending privacy impact assessment cleared, we had access to physical smar
 
 ### Sample-Size Check (Gate 2B)
 
-Only a small share of web sessions belonged to logged-in, card-linked users — consistent with the new-user skew already found in Phase 2. This ruled out a fully segmented individual-level analysis, but still supported one aggregate figure.
+Only a small share of web `journey_planner` users could be linked to a smartcard — consistent with the new-user skew already found in Phase 2, since a first-touch audience is far less likely to already be logged in.
+
+```sql
+-- How many web journey_planner-engaged users can be linked to a
+-- smartcard via a logged-in account?
+WITH web_journey_planner_users AS (
+  SELECT 
+   DISTINCT user_pseudo_id
+  FROM 
+   `project.analytics_derived.baseline_events_21d`
+  WHERE 
+   platform_group = 'WEB' AND event_name = 'feature_engaged' AND (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') = 'journey_planner'
+)
+
+SELECT
+  COUNT(DISTINCT w.user_pseudo_id) AS journey_planner_web_users,
+  COUNT(DISTINCT l.card_id_hashed) AS linked_users,
+  ROUND(COUNT(DISTINCT l.card_id_hashed) / COUNT(DISTINCT w.user_pseudo_id) * 100, 1) AS linked_pct
+FROM 
+ web_journey_planner_users w
+LEFT JOIN `project.analytics_derived.user_card_link` l USING (user_pseudo_id);
 
 ```
-# TODO: insert the join logic used to match web sessions
-# to smartcard touch-on records within a time window
-```
+
+Of 36,260 web `journey_planner` users, 2,176 could be linked — 6.0%. That's too thin to support segmenting the deterministic check any further (by device, by time-of-day, and so on), but still enough for one aggregate figure. This ruled out a fully segmented individual-level analysis, but still supported the single Tier 1 rate that follows.
 
 ### Two Independent Checks
 
 **Deterministic check** (small, precise): among linked users, a web planning session was followed by a touch-on at the planned origin within 24 hours at roughly 3.5 times the rate of a matched baseline with no session.
 
 **Cohort check** (large, less precise): across the full population, web session volume correlated with touch-on volume at a next-day lag — for both mobile and desktop web alike — while app usage correlated almost immediately, consistent with in-transit use.
+
+### Tier 1 — Deterministic Check
+
+```sql
+#TODO: Add section
+```
+### Tier 2 — Cohort Check
+
+Tier 1 only reaches the 6% of `journey_planner` web users who are logged in and myki-linked — a population skewed toward habitual users, which is the opposite of the group Phase 2 found web usage actually over-represents. Tier 2 checks the same question at population scale instead, using only aggregate hourly volume on both sides, with no individual matching at all.
+
+Rather than assuming where a web planning session and a resulting trip would line up in time, this checks a full range of lags and lets the data show where the relationship is strongest.
+
+```sql
+-- First look: correlation between journey_planner session volume and
+-- touch-on volume, at a spread of lags, per platform and device.
+-- Aggregate counts only — no individual identity is used.
+
+WITH hourly_sessions AS (
+  SELECT
+    TIMESTAMP_TRUNC(TIMESTAMP_MICROS(event_timestamp), HOUR) AS session_hour,
+    platform_group,
+    device_category,
+    COUNT(DISTINCT user_pseudo_id) AS sessions
+  FROM 
+   `project.analytics_derived.baseline_events_21d`
+  WHERE 
+   event_name = 'feature_engaged' AND (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') = 'journey_planner'
+  GROUP BY 
+   session_hour, 
+   platform_group, 
+   device_category
+),
+
+hourly_touch_ons AS (
+  SELECT
+    TIMESTAMP_TRUNC(event_timestamp, HOUR) AS touch_hour,
+    COUNT(*) AS touch_ons
+  FROM 
+   `project.smartcard_derived.touch_events`
+  WHERE 
+   touch_type = 'on'
+  GROUP BY 
+   touch_hour
+)
+
+SELECT
+  s.platform_group,
+  s.device_category,
+  lag_hours,
+  ROUND(CORR(s.sessions, t.touch_ons), 2) AS correlation
+FROM 
+ hourly_sessions s
+CROSS JOIN UNNEST([0, 1, 2, 24, 27, 30]) AS lag_hours
+JOIN hourly_touch_ons t
+  ON t.touch_hour = TIMESTAMP_ADD(s.session_hour, INTERVAL lag_hours HOUR)
+GROUP BY 
+ s.platform_group, 
+ s.device_category, 
+ lag_hours
+ORDER BY 
+s.platform_group, 
+s.device_category, 
+lag_hours;
+```
+
+| platform_group | device_category | lag_hours | correlation |
+|---|---|---|---|
+| APP | mobile | 0 | 0.68 |
+| APP | mobile | 1 | 0.74 |
+| APP | mobile | 2 | 0.70 |
+| APP | mobile | 24 | 0.21 |
+| WEB | mobile | 1 | 0.19 |
+| WEB | mobile | 24 | 0.52 |
+| WEB | mobile | 27 | 0.58 |
+| WEB | mobile | 30 | 0.54 |
+| WEB | desktop | 1 | 0.15 |
+| WEB | desktop | 24 | 0.61 |
+| WEB | desktop | 27 | 0.57 |
+| WEB | desktop | 30 | 0.50 |
+
+Each group shows a clear rise and fall around a different point — the app peaks and falls off within a couple of hours, while both web device types stay elevated across a much wider band a day later. Rather than reading the peak off this shortlist by eye, the full scan is swept automatically and the single best lag per group is kept:
+
+```sql
+-- Full scan: sweep every hourly lag from 0 to 36h and keep only
+-- the peak correlation for each platform and device.
+
+WITH hourly_sessions AS (
+  SELECT
+    TIMESTAMP_TRUNC(TIMESTAMP_MICROS(event_timestamp), HOUR) AS session_hour,
+    platform_group,
+    device_category,
+    COUNT(DISTINCT user_pseudo_id) AS sessions
+  FROM 
+   `project.analytics_derived.baseline_events_21d`
+  WHERE 
+   event_name = 'feature_engaged' AND (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') = 'journey_planner'
+  GROUP BY 
+   session_hour, 
+   platform_group, 
+   device_category
+),
+
+hourly_touch_ons AS (
+  SELECT
+    TIMESTAMP_TRUNC(event_timestamp, HOUR) AS touch_hour,
+    COUNT(*) AS touch_ons
+  FROM 
+   `project.smartcard_derived.touch_events`
+  WHERE 
+   touch_type = 'on'
+  GROUP BY 
+   touch_hour
+),
+
+lag_correlations AS (
+  SELECT
+    s.platform_group,
+    s.device_category,
+    lag_hours,
+    CORR(s.sessions, t.touch_ons) AS correlation
+  FROM 
+   hourly_sessions s
+  CROSS JOIN UNNEST(GENERATE_ARRAY(0, 36)) AS lag_hours
+  JOIN hourly_touch_ons t
+    ON t.touch_hour = TIMESTAMP_ADD(s.session_hour, INTERVAL lag_hours HOUR)
+  GROUP BY 
+   s.platform_group, 
+   s.device_category, 
+   lag_hours
+)
+
+SELECT 
+ platform_group, 
+ device_category, 
+ lag_hours, 
+ ROUND(correlation, 2) AS correlation
+FROM 
+ lag_correlations
+QUALIFY ROW_NUMBER() OVER (
+  PARTITION BY platform_group, device_category ORDER BY correlation DESC
+) = 1
+ORDER BY 
+ platform_group, 
+ device_category;
+```
+
+The peak lag itself is part of the finding, not just the correlation strength at it: app `journey_planner` engagement peaks at 1 hour (r=0.74), desktop web at 24 hours (r=0.61), mobile web at 27 hours (r=0.58). App usage is tied almost immediately to a trip; both web device types sit roughly a day ahead of one, and land close enough to each other that device isn't what's driving the difference from app.
+
+One limitation of this to note as reported, is that a correlation computed over roughly 500 hourly buckets (21 days × 24 hours) per group carries a wider margin than the two-decimal figures suggest. It is enough to trust the shape and ordering across groups but not enough to treat 0.58 versus 0.61 as a meaningful difference in corelation between the two device types.
 
 ![alt text](/img/posts/scenario-b-confirmation.png "Smartcard Linkage Confirmation")
 
