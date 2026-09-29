@@ -201,7 +201,30 @@ Raw `feature_engaged` usage rate by platform, across all four features, over the
 
 This query works in three stages, each building on the last:
 
-1. Pull the raw event data, and sort every user into "app" or "web." GA4 records the app's two platforms (iOS and Android) separately, but we report app to web as a whole. The first step collapses iOS and Android into a single APP group, keeping web as its own group. This grouping is then reused identically in every later query, so the same person is never counted as "app" in one chart and split apart in another.
+1. Pull the raw event data, and sort every user into "app" or "web." GA4 records the app's two platforms (iOS and Android) separately, but we report app to web as a whole. The first step collapses iOS and Android into a single APP group, keeping web as its own group. Because every phase from here on depends on this same definition, it's created once as a standalone table:
+
+```sql
+-- platform_group collapses ANDROID + IOS into APP here, and this
+-- exact definition must be reused unchanged everywhere else.
+-- Source: GA4 BigQuery export (events_* daily tables)
+
+CREATE OR REPLACE TABLE `project.analytics_derived.baseline_events_21d` AS
+SELECT
+  event_date,
+  user_pseudo_id,
+  user_id,
+  event_name,
+  event_params,
+  device.category AS device_category,
+  event_timestamp,
+  user_first_touch_timestamp,
+  CASE
+    WHEN platform IN ('ANDROID', 'IOS') THEN 'APP'
+    WHEN platform = 'WEB' THEN 'WEB'
+  END AS platform_group
+FROM `project.analytics_XXXXXXX.events_*`
+WHERE _TABLE_SUFFIX BETWEEN '20260811' AND '20260831';
+```
 
 2. Count two different things, side by side. From that pool of events, the query counts:
 * Active users — anyone who did anything at all on each platform in the 21-day window (the denominator)
@@ -211,37 +234,14 @@ This query works in three stages, each building on the last:
 
 ```sql
 -- Feature usage rate by platform (app vs web), 21-day baseline window
--- Source: GA4 BigQuery export (events_* daily tables)
---
--- platform_group collapses ANDROID + IOS into APP here, and this
--- exact definition needs to be reused unchanged in every downstream
--- query
+-- Source: analytics_derived.baseline_events_21d
 
-WITH baseline_events AS (
-  SELECT
-    event_date,
-    user_pseudo_id,
-    event_name,
-    event_params,
-    device.category AS device_category,
-    event_timestamp,
-    user_first_touch_timestamp,
-    CASE
-      WHEN platform IN ('ANDROID', 'IOS') THEN 'APP'
-      WHEN platform = 'WEB' THEN 'WEB'
-    END AS platform_group
-  FROM 
-   `project.analytics_XXXXXXX.events_*`
-  WHERE 
-   _TABLE_SUFFIX BETWEEN '20260811' AND '20260831'
-),
-
-active_users AS (
+WITH active_users AS (
   SELECT
     platform_group,
     COUNT(DISTINCT user_pseudo_id) AS active_users
   FROM 
-   baseline_events
+   `project.analytics_derived.baseline_events_21d`
   GROUP BY 
    platform_group
 ),
@@ -252,11 +252,12 @@ feature_users AS (
     (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') AS feature_name,
     COUNT(DISTINCT user_pseudo_id) AS engaged_users
   FROM 
-   baseline_events
+   `project.analytics_derived.baseline_events_21d`
   WHERE 
    event_name = 'feature_engaged'
   GROUP BY 
-   platform_group, feature_name
+   platform_group, 
+   feature_name
 )
 
 SELECT
@@ -267,8 +268,7 @@ SELECT
   ROUND(f.engaged_users / a.active_users * 100, 1) AS usage_rate_pct
 FROM 
  feature_users f
-JOIN 
- active_users a USING (platform_group)
+JOIN active_users a USING (platform_group)
 ORDER BY 
  f.feature_name, 
  f.platform_group;
@@ -362,31 +362,7 @@ For the escalated feature, **journey_planner**, we layered in device category (m
 
 ### First Look to Formal Query
 
-Each cut started with a simple pass at the data, before deciding what — if anything — needed to be measured more precisely. All three read from a persisted copy of the Phase 1 baseline events, created once with the same platform grouping and 21-day window, so every query below inherits identical definitions.
-
-```sql
--- Persists the Phase 1 baseline events so every query below reads from
--- one shared definition of platform_group and the 21-day window.
--- The window and platform_group logic must match the Phase 1 query.
-
-CREATE OR REPLACE TABLE `project.analytics_derived.baseline_events_21d` AS
-SELECT
-  event_date,
-  user_pseudo_id,
-  event_name,
-  event_params,
-  device.category AS device_category,
-  event_timestamp,
-  user_first_touch_timestamp,
-  CASE
-    WHEN platform IN ('ANDROID', 'IOS') THEN 'APP'
-    WHEN platform = 'WEB' THEN 'WEB'
-  END AS platform_group
-FROM 
- `project.analytics_XXXXXXX.events_*`
-WHERE 
- _TABLE_SUFFIX BETWEEN '20260811' AND '20260831';
-```
+Each cut started with a simple pass at the data, before deciding what — if anything — needed to be measured more precisely. All three read from the baseline table created in Phase 1, so every query below inherits identical platform and window definitions.
 
 **Device category** began with a plain count of engaged users on mobile web against desktop web, which favoured mobile web.
 
