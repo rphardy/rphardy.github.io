@@ -263,9 +263,13 @@ SELECT
   f.engaged_users,
   a.active_users,
   ROUND(f.engaged_users / a.active_users * 100, 1) AS usage_rate_pct
-FROM feature_users f
-JOIN active_users a USING (platform_group)
-ORDER BY f.feature_name, f.platform_group;
+FROM 
+ feature_users f
+JOIN 
+ active_users a USING (platform_group)
+ORDER BY 
+ f.feature_name, 
+ f.platform_group;
 ```
 
 ### Baseline Feature Usage Dashboard
@@ -624,7 +628,7 @@ Two recommendations shipped as final at this stage. One was flagged, explicitly,
 
 ---
 
-# Scenario B: Smartcard Linkage {#scenario-b}
+# Scenario B: PIA Passed - Smartcard Linkage {#scenario-b}
 
 Once a pending privacy impact assessment cleared, we had access to physical smartcard touch-on/touch-off records — a genuinely independent form of evidence for the one flagged recommendation.
 
@@ -721,9 +725,9 @@ GROUP BY
  s.device_category, 
  lag_hours
 ORDER BY 
-s.platform_group, 
-s.device_category, 
-lag_hours;
+ s.platform_group, 
+ s.device_category, 
+ lag_hours;
 ```
 
 | platform_group | device_category | lag_hours | correlation |
