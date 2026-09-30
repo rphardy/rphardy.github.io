@@ -233,6 +233,8 @@ WHERE
  _TABLE_SUFFIX BETWEEN '20260811' AND '20260831';
 ```
 
+For illustration, 5 randomly selected rows from this table might be viewed as:
+
 | event_date | user_pseudo_id | user_id | event_name | feature_name | interaction_depth | device_category | platform_group | event_timestamp |
 |---|---|---|---|---|---|---|---|---|
 | 2026-08-12	| 8841029.552 | null | feature_engaged | journey_planner | viewed | mobile | WEB | 1755043800000000 |
