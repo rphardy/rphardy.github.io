@@ -254,10 +254,6 @@ Count two different things, side by side. From that pool of events, the query co
 * Active users — anyone who did anything at all on each platform in the 21-day window (the denominator)
 * Engaged users — of those, anyone who specifically interacted with one of the four features being studied, broken out feature by feature (the numerator)
 
-
-#### Stage 3 
-Divide the two, per feature and per platform. The final step joins those two counts together and calculates what share of each platform's active users actually engaged with each feature — this is the usage rate percentage that appears as the bars in the Phase 1 chart.
-
 ```sql
 -- Feature usage rate by platform (app vs web), 21-day baseline window
 -- Source: analytics_derived.baseline_events_21d
@@ -285,6 +281,12 @@ feature_users AS (
    platform_group,
    feature_name
 )
+```
+
+#### Stage 3 
+Divide the two, per feature and per platform. The final step joins those two counts together and calculates what share of each platform's active users actually engaged with each feature — this is the usage rate percentage that appears as the bars in the Phase 1 chart.
+
+```sql
 
 SELECT
   f.feature_name,
