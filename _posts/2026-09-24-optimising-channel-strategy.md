@@ -79,7 +79,7 @@ Every one of the three questions above now has an evidence-backed answer:
 
 ### Growth/Next Steps {#overview-growth}
 
-The real_time_departures feature originally deferred by capacity, rather than by evidence, remains open. The case for continued investment there is already strong, but was not formally re-examined once development resources were redirected elsewhere. The smartcard linkage pipeline built for this project is reusable for future features without repeating the governance approval process.
+The real_time_departures feature originally deferred by capacity, rather than by evidence, remains open. The case for continued investment there is already strong, but was not formally re-examined once development resources were redirected elsewhere. The smartcard linkage pipeline built for this project is reusable for future features.
 
 ### Key Definition {#overview-definition}
 
@@ -1079,4 +1079,4 @@ The client's development team now has a prioritised, evidence-ranked backlog rat
 
 # Growth & Next Steps {#growth-next-steps}
 
-The one feature deferred by capacity — `real_time_departures` — still has an open, evidence-backed case for continued app investment that was never formally revisited once the team's attention moved elsewhere. The smartcard linkage pipeline built for this project required no new governance approval to reuse, and remains available for any future feature whose recommendation rests on an inference rather than a direct measurement.
+The one feature deferred by capacity — `real_time_departures` — still has an open, evidence-backed case for continued app investment that was never formally revisited once the team's attention moved elsewhere. The smartcard linkage pipeline built for this project remains available for any future feature whose recommendation rests on an inference rather than a direct measurement.
