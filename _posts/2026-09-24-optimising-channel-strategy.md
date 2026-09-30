@@ -206,7 +206,8 @@ Raw `feature_engaged` usage rate by platform, across all four features, over the
 
 This query works in three stages, each building on the last:
 
-1. Pull the raw event data, and sort every user into "app" or "web." GA4 records the app's two platforms (iOS and Android) separately, but we report app to web as a whole. The first step collapses iOS and Android into a single APP group, keeping web as its own group. Because every phase from here on depends on this same definition, it's created once as a standalone table:
+#### Stage 1
+Pull the raw event data, and sort every user into "app" or "web." GA4 records the app's two platforms (iOS and Android) separately, but we report app to web as a whole. The first step collapses iOS and Android into a single APP group, keeping web as its own group. Because every phase from here on depends on this same definition, it's created once as a standalone table:
 
 ```sql
 -- platform_group collapses ANDROID + IOS into APP here, and this
@@ -248,12 +249,14 @@ For illustration, 5 randomly selected rows from this table might be viewed as:
 note that the column event_name has been scoped (in next steps) to events where a feature was engaged. The column feature_name has also been defined as the value.string_value for the event_params field where the key = 'feature_name': giving one of the four event types (as strings) that we are interested in. 
 
 
-2. Count two different things, side by side. From that pool of events, the query counts:
+#### Stage 2 
+Count two different things, side by side. From that pool of events, the query counts:
 * Active users — anyone who did anything at all on each platform in the 21-day window (the denominator)
 * Engaged users — of those, anyone who specifically interacted with one of the four features being studied, broken out feature by feature (the numerator)
 
 
-3. Divide the two, per feature and per platform. The final step joins those two counts together and calculates what share of each platform's active users actually engaged with each feature — this is the usage rate percentage that appears as the bars in the Phase 1 chart.
+#### Stage 3 
+Divide the two, per feature and per platform. The final step joins those two counts together and calculates what share of each platform's active users actually engaged with each feature — this is the usage rate percentage that appears as the bars in the Phase 1 chart.
 
 ```sql
 -- Feature usage rate by platform (app vs web), 21-day baseline window
