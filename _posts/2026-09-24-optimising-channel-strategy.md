@@ -233,6 +233,7 @@ WHERE
  _TABLE_SUFFIX BETWEEN '20260811' AND '20260831';
 ```
 
+
 For illustration, 5 randomly selected rows from this table might be viewed as:
 
 | event_date | user_pseudo_id | user_id | event_name | feature_name | interaction_depth | device_category | platform_group | event_timestamp | user_first_touch_timestamp |
@@ -243,11 +244,14 @@ For illustration, 5 randomly selected rows from this table might be viewed as:
 | 2026-08-18 | 9042731.209 | null | feature_engaged | disruption_alerts | — | mobile | APP | 1787040000000000 | 1786995600000000 |
 | 2026-08-20 | 5567321.884 | acct_4410 | feature_engaged | journey_planner | viewed | desktop | WEB | 1787212800000000 | 1784711100000000 |
 
+
 note that the column event_name has been scoped (in next steps) to events where a feature was engaged. The column feature_name has also been defined as the value.string_value for the event_params field where the key = 'feature_name': giving one of the four event types (as strings) that we are interested in. 
+
 
 2. Count two different things, side by side. From that pool of events, the query counts:
 * Active users — anyone who did anything at all on each platform in the 21-day window (the denominator)
 * Engaged users — of those, anyone who specifically interacted with one of the four features being studied, broken out feature by feature (the numerator)
+
 
 3. Divide the two, per feature and per platform. The final step joins those two counts together and calculates what share of each platform's active users actually engaged with each feature — this is the usage rate percentage that appears as the bars in the Phase 1 chart.
 
