@@ -235,13 +235,15 @@ WHERE
 
 For illustration, 5 randomly selected rows from this table might be viewed as:
 
-| event_date | user_pseudo_id | user_id | event_name | feature_name | interaction_depth | device_category | platform_group | event_timestamp |
-|---|---|---|---|---|---|---|---|---|
-| 2026-08-12	| 8841029.552 | null | feature_engaged | journey_planner | viewed | mobile | WEB | 1755043800000000 |
-| 2026-08-14 | 2210984.117 | acct_9931 | feature_engaged | real_time_departures | interacted | mobile | APP | 1755213600000000 |
-| 2026-08-15 | 5567321.884 | acct_4410 | feature_engaged | saved_trips | completed | desktop | WEB | 1755291000000000 |
-| 2026-08-18 | 9042731.209 | null | feature_engaged | disruption_alerts | — | mobile | APP | 1755518400000000 |
-| 2026-08-20 | 5567321.884 | acct_4410 | feature_engaged | journey_planner | viewed | desktop | WEB | 1755678000000000 |
+| event_date | user_pseudo_id | user_id | event_name | feature_name | interaction_depth | device_category | platform_group | event_timestamp | user_first_touch_timestamp |
+|---|---|---|---|---|---|---|---|---|---|
+| 2026-08-12 | 8841029.552 | null | feature_engaged | journey_planner | viewed | mobile | WEB | 1786523400000000 | 1786523400000000 |
+| 2026-08-14 | 2210984.117 | acct_9931 | feature_engaged | real_time_departures | interacted | mobile | APP | 1786701600000000 | 1786259700000000 |
+| 2026-08-15 | 5567321.884 | acct_4410 | feature_engaged | saved_trips | completed | desktop | WEB | 1786782600000000 | 1784711100000000 |
+| 2026-08-18 | 9042731.209 | null | feature_engaged | disruption_alerts | — | mobile | APP | 1787040000000000 | 1786995600000000 |
+| 2026-08-20 | 5567321.884 | acct_4410 | feature_engaged | journey_planner | viewed | desktop | WEB | 1787212800000000 | 1784711100000000 |
+
+note that the column event_name has been scoped (in next steps) to events where a feature was engaged. The column feature_name has also been defined as the value.string_value for the event_params field where the key = 'feature_name': giving one of the four event types (as strings) that we are interested in. 
 
 2. Count two different things, side by side. From that pool of events, the query counts:
 * Active users — anyone who did anything at all on each platform in the 21-day window (the denominator)
