@@ -621,7 +621,28 @@ Two recommendations shipped as final at this stage. One was flagged, explicitly,
 
 # Scenario B: Smartcard Linkage {#scenario-b}
 
-Once a pending privacy impact assessment cleared, we had access to physical smartcard touch-on/touch-off records — a genuinely independent form of evidence for the one flagged recommendation.
+Once a pending privacy impact assessment cleared, we had access to physical smartcard touch-on/touch-off records — a genuinely independent form of evidence for the one flagged recommendation. These data are stored in two external tables (account_card_bridge, touch_events) which appear as:
+
+transport_core.account_card_bridge
+
+| account_id | card_id_hashed |
+|---|---|
+| acct_4410 | 7f3a9c1e |
+| acct_4410 | b12de08a |
+| acct_9931 | 44c7f0d2 |
+| acct_2207 | 9a01ee3c |
+| acct_5583 | e620b7f1 |
+
+smartcard_derived.touch_events
+
+| card_id_hashed | stop_id | touch_type | event_timestamp |
+|---|---|---|---|
+| 7f3a9c1e | stop_2291 | on | 2026-08-20 07:42:00 |
+| 7f3a9c1e | stop_4410 | off | 2026-08-20 08:15:00 |
+| b12de08a | stop_2291 | on | 2026-08-21 18:03:00 |
+| 44c7f0d2 | stop_1187 | on | 2026-08-14 17:52:00 |
+| 9a01ee3c | stop_3302 | on | 2026-08-16 09:10:00 |
+
 
 ### Sample-Size Check (Gate 2B)
 
@@ -644,7 +665,8 @@ WITH web_journey_planner_users AS (
 logged_in_sessions AS (
   SELECT
    DISTINCT
-    user_pseudo_id, user_id
+    user_pseudo_id, 
+    user_id
    FROM
     `project.analytics_derived.baseline_events_21d`
    WHERE
