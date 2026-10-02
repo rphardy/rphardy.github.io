@@ -39,7 +39,7 @@ This case study uses that real situation as its motivating context — to illust
 
 Transport Victoria's digital team maintains four core *features* across their app and website: real-time departures, saved trips, disruption alerts, and the journey planner itself. Each feature had usage on both platforms. For this analysis we assume that no one could say with confidence if this usage showed real need for both platforms, or usage that nobody had looked at closely enough to justify investment in across both platforms.
 
-Transport Victoria needed to answer three specific questions before it commits the next development cycle:
+Transport Victoria needed to answer three specific questions before committing the next development cycle:
 
 1. **Platform exclusivity** — should a feature exist on the app only, the website only, or both?
 2. **Development priority** — within available development time, what should the team build next?
