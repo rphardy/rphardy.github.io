@@ -1096,10 +1096,10 @@ Two of the three project decisions — platform exclusivity and retirement candi
 
 # Application {#application}
 
-The client's development team now has a prioritised, evidence-ranked backlog rather than a flat feature list: the disruption alert redesign leads, backed by directly measured action-rate data; the journey planner's app-download prompt follows, backed by the smartcard-confirmed conversion case; and no further web investment is planned for the saved trips feature pending its 6-month retirement review.
+The client's development team now has a ranked, evidence-based list of work, instead of a flat feature list. The disruption alert redesign leads this list, backed by directly measured action-rate data. The journey planner's app-download prompt follows, backed by the smartcard-confirmed conversion case. The team plans no further web investment for the saved trips feature, pending its 6-month retirement review.
 
 ---
 
 # Growth & Next Steps {#growth-next-steps}
 
-The one feature deferred by capacity — `real_time_departures` — still has an open, evidence-backed case for continued app investment that was never formally revisited once the team's attention moved elsewhere. The smartcard linkage pipeline built for this project remains available for any future feature whose recommendation rests on an inference rather than a direct measurement.
+The client's development team deferred one feature due to limited capacity: `real_time_departures`. This feature still has an open, evidence-backed case for continued app investment that was never formally revisited once the team's attention moved elsewhere. The smartcard linkage pipeline built for this project remains available for any future feature whose recommendation rests on an inference rather than a direct measurement.
