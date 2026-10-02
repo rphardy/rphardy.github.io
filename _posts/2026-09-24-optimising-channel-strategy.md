@@ -100,31 +100,31 @@ We also distinguish two **scenarios**, depending on whether the pending privacy 
 
 # Data & Instrumentation Overview {#data-overview}
 
-We tracked usage across app and web using a single custom GA4 event, parameterised rather than split into many separate event names — this keeps every platform and feature directly comparable in reporting.
+We tracked usage across app and web using one custom GA4 event. We used parameters on this event, instead of many separate event names. This approach keeps every platform and feature directly comparable.
 
 | **Field Name** | **Scope** | **Description** |
 |---|---|---|
 | feature_engaged | Event | Fires whenever a user meaningfully interacts with one of the four core features |
-| feature_name | Event parameter | Which feature: real_time_departures, saved_trips, disruption_alerts, or journey_planner |
+| feature_name | Event parameter | Names the feature: real_time_departures, saved_trips, disruption_alerts, or journey_planner |
 | interaction_depth | Event parameter | How far the user got: viewed, interacted, or completed |
-| lookup_lead_time_min | Event parameter | For real-time departures: minutes between the lookup and actual departure — a proxy for imminent vs. planned travel |
+| lookup_lead_time_min | Event parameter | For real-time departures: the minutes between the lookup and the actual departure. This value is a proxy for imminent travel versus planned travel |
 | alert_channel | Event parameter | For disruption alerts: push, in-app banner, or web banner |
-| alert_action | Event parameter | What the user did with an alert: dismissed, viewed detail, or replanned their trip. Each alert interaction fires one event, so events map one-to-one to outcomes |
+| alert_action | Event parameter | Shows what the user did with an alert: dismissed, viewed detail, or replanned their trip. Each alert interaction fires one event, so events map one-to-one to outcomes |
 | platform | Native (GA4 export) | GA4's own field — ANDROID, IOS, or WEB — collapsed to APP/WEB throughout this analysis |
-| device.category | Native (GA4 export) | GA4's own field, used to split web traffic into mobile web vs desktop web in Phase 2 |
-| user_id | Native (GA4 export) | GA4's login-only identity field, set from a hashed internal account ID at sign-in; bridges to smartcard data in Scenario B — absent for anonymous sessions |
-| touch-on / touch-off | External (smartcard system) | Physical boarding/alighting records, linked in Scenario B to confirm one finding |
-| account_card_bridge | External (ticketing system) | Maps each account_id to its linked card_id_hashed; one account may hold multiple cards. Joined to user_id in Scenario B's Gate 2B and Tier 1 checks |
+| device.category | Native (GA4 export) | GA4's own field. We use this field to split web traffic into mobile web and desktop web in Phase 2 |
+| user_id | Native (GA4 export) | GA4's login-only identity field. The department sets this field from a hashed internal account ID at sign-in. This field links to smartcard data in Scenario B and is absent for anonymous sessions |
+| touch-on / touch-off | External (smartcard system) | Physical boarding and alighting records. We link these records in Scenario B to confirm one finding |
+| account_card_bridge | External (ticketing system) | Maps each account_id to its linked card_id_hashed. One account may hold multiple cards. We join this table to user_id in Scenario B's Gate 2B and Tier 1 checks |
 
 ---
 
-platform, user_id and device.category are collected automatically by GA4 and don't require custom dimension registration, whereas the five event parameters above them are custom registered.
+GA4 collects the platform, user_id, and device.category fields automatically. These don't require custom dimension registration, whereas the five event parameters above them are custom registered.
 
 # Methodology Overview {#methodology-overview}
 
-We are answering three related but distinct questions (platform exclusivity, dev priority, retirement) using a single phased evidence pipeline, rather than treating each as a separate analysis.
+We answer three related but distinct questions (platform exclusivity, development priority, and retirement). Instead of running three separate analyses, we use one phased evidence pipeline to answer all three questions.
 
-As the underlying evidence ranges from directly observed usage splits through to physical movement data, we structured the work as a sequence of gated phases, each one only escalating to the next when the current evidence genuinely couldn't resolve the question:
+The evidence in this analysis ranges from directly observed usage splits to physical movement data. For this reason, we structured the work as a sequence of gated phases. Each phase only moves to the next phase when the current evidence cannot resolve the question:
 
 - Phase 0: Instrumentation
 - Phase 1: GA4 baseline (Gate 1 — fast-track check)
@@ -133,36 +133,36 @@ As the underlying evidence ranges from directly observed usage splits through to
 - Phase 3: Synthesis (Gate 3A — confidence tiering)
 - Scenario B: Smartcard linkage (Gate 2B — sample-size check)
 
-Each phase breaks down into two kinds of work: a **query**, which produces a number from the data, and a **judgement**, where a human applies a threshold the data alone can't set. Several of the gates (Gate 1, Gate 2B) exist specifically to hand a decision to a person rather than automate it, which is why keeping the two apart matters.
+Each phase breaks down into two kinds of work. a **query** produces a number from the data. A **judgement** applies a threshold that the data alone cannot set. Several of the gates (Gate 1, Gate 2B) exist to hand a decision to a person instead of automating the decision. This report keeps queries and judgements separate for this reason, shown here in the sequence they occur:
 
-| # | Type | Step |
-|---|---|---|
-| 1 | Query | Baseline usage-rate query — all four features, both platforms |
-| 2 | Judgement | Apply Gate 1's threshold — saved_trips fast-tracked, others carried forward |
-| 3 | Query | Interaction-depth breakdown for saved_trips, supporting the fast-track call |
-| 4 | Judgement | Stakeholder checkpoint — scope set: escalate, reframe, or defer each remaining feature |
-| 5 | Query | Device, timing, and new-vs-returning cuts on the escalated feature |
-| 6 | Query | Channel/outcome breakdown for the reframed feature |
-| 7 | Judgement | Synthesise findings into confidence tiers; apply Gate 3A |
-| 8 | — | Wait for privacy approval — independent of the analysis itself |
-| 9 | Query | Gate 2B sample-size check — join via GA4's user_id, bridged to the ticketing system's account-card mapping |
-| 10 | Judgement | Assess whether the linked sample clears the bar for individual-level analysis |
-| 11 | Query | Deterministic (Tier 1) join and cohort (Tier 2) correlation, run independently |
-| 12 | Judgement | Compare tiers, close Gate 3A, and package the final decision matrix |
+| # | Phase | Type | Step |
+|---|---|---|---|
+| 1 | Phase 1 | Query | Baseline usage-rate query — all four features, both platforms |
+| 2 | Phase 1 | Judgement | Apply Gate 1's threshold — saved_trips fast-tracked, others carried forward |
+| 3 | Phase 1 | Query | Interaction-depth breakdown for saved_trips, supporting the fast-track call |
+| 4 | Stakeholder Checkpoint | Judgement | Stakeholder checkpoint — scope set: escalate, reframe, or defer each remaining feature |
+| 5 | Phase 2 | Query | Device, timing, and new-vs-returning cuts on the escalated feature |
+| 6 | Phase 2 | Query | Channel/outcome breakdown for the reframed feature |
+| 7 | Phase 3 | Judgement | Synthesise findings into confidence tiers; apply Gate 3A |
+| 8 | Between Phase 3 and Scenario B | — | Wait for privacy approval — independent of the analysis itself |
+| 9 | Scenario B | Query | Gate 2B sample-size check — join via GA4's user_id, bridged to the ticketing system's account-card mapping |
+| 10 | Scenario B | Judgement | Assess whether the linked sample clears the bar for individual-level analysis |
+| 11 | Scenario B | Query | Deterministic (Tier 1) join and cohort (Tier 2) correlation, run independently |
+| 12 | Scenario B | Judgement | Compare tiers, close Gate 3A, and package the final decision matrix |
 
-Step 8 is a wait — the Scenario A recommendation was already delivered and actionable before anyone knew the smartcard linkage would become possible.
+Step 8 is a wait step. We could already deliver the Scenario A recommendation. This recommendation was complete and actionable before we knew if the smartcard linkage would become possible.
 
 ---
 
 # Phase 0: Instrumentation {#phase-0}
 
-Before any comparison between app and web is meaningful, both platforms need to report into the same place, in the same shape.
+Before any comparison between app and web is meaningful, both platforms need to report into the same place, in the same format.
 
 ### Setup
 
-We audited the existing gtag and Firebase configurations to confirm both data streams report into the same GA4 property, checked that the custom dimensions listed in the Data Overview above were already registered and mapped correctly (a small number were missing and added at this stage), and validated event delivery for all platforms in DebugView before letting any baseline window run.
+We checked the existing gtag and Firebase settings to confirm that both data streams report into the same GA4 property. We also checked the custom dimensions listed in the Data Overview table above. Most dimensions were already registered and mapped correctly (a small number were missing and added at this stage). We then validated event delivery for all platforms in DebugView, before we let the baseline window run.
 
-`lookup_lead_time_min` was one of the dimensions missing from the existing setup, and needed to be derived rather than just passed through — the department's tagging is managed via Google Tag Manager, so the raw timestamps were pushed to the dataLayer at the point of lookup, with the actual minutes-until-departure calculation configured as a GTM variable rather than redeployed in application code:
+The `lookup_lead_time_min` dimension was missing from the existing setup and needed to be derived. The department manages its tagging through Google Tag Manager. For this reason, we pushed the raw timestamps to the dataLayer at the point of lookup (Block 1): 
 
 ```javascript
 // Pushed to the dataLayer by the existing lookup handler,
@@ -176,6 +176,8 @@ dataLayer.push({
 });
 ```
 
+then configured the minutes-until-departure calculation as a GTM variable (Block 2):
+
 ```javascript
 // GTM Custom JavaScript variable, referenced by the
 // feature_engaged tag as the lookup_lead_time_min parameter
@@ -186,15 +188,27 @@ function() {
 }
 ```
 
+Block 2 is a GTM Custom JavaScript Variable — a small function GTM runs on demand.
+
+{{DLV - departure_time}} and {{DLV - lookup_time}} are GTM's syntax for "Data Layer Variable" — they reach back into the dataLayer and pull out the two values Block 1 pushed.
+
+new Date(...) converts each of those ISO text strings back into actual JavaScript date objects, so they can be subtracted.
+
+departure - lookup : subtracting two Date objects in JavaScript gives the difference in milliseconds.
+
+/ 60000 converts milliseconds to minutes (60,000 ms in a minute).
+
+Math.round(...) rounds that to a whole minute.
+
+return hands this final number back to GTM, which then attaches it to the feature_engaged event as the lookup_lead_time_min parameter — ready for use in GA4.
+
 ### Validation
 
-A platform breakdown check confirmed both app platforms and web were reporting consistently before the baseline window began — this is also the check that would have caught a version-drift issue (e.g., one platform's build predating a schema update) had one existed.
-
-![alt text](/img/posts/phase0-ga4-status.png "GA4 Instrumentation Status")
+A platform breakdown check confirmed that both app platforms and the website reported data consistently. We ran this check before the baseline window began. This check would have caught a version-drift issue, if one had existed. For example, one platform's software build might predate a schema update.
 
 ### Outcome
 
-Instrumentation confirmed clean. The 21-day baseline window began.
+Once we had confirmed the instrumentation was correct, the 21-day baseline window began.
 
 ---
 
