@@ -14,7 +14,7 @@ Our client, a state transport department, runs its journey planning, ticketing, 
   * [Actions](#overview-actions)
   * [Results](#overview-results)
   * [Growth/Next Steps](#overview-growth)
-  * [Key Definition](#overview-definition)
+  * [Key Definitions](#overview-definition)
 - [01. Data & Instrumentation Overview](#data-overview)
 - [02. Methodology Overview](#methodology-overview)
 - [03. Phase 0: Instrumentation](#phase-0)
@@ -35,66 +35,66 @@ Our client, a state transport department, runs its journey planning, ticketing, 
 
 In mid-2025, Transport Victoria (formerly Public Transport Victoria) retired its standalone PTV website, combining journey planning, real-time information, and myki services in the single transport.vic.gov.au domain, citing the old site's end-of-life state and the ongoing cost of maintaining duplicate platforms. The PTV app, however, remains a separately maintained product, with its own release cycle that addresses real-time on-app accuracy and journey planning reliability issues as they arise.
 
-This case study uses that real, already-partly-resolved situation as its motivating context — to illustrate how a structured, phased GA4 analysis could approach what remains open: where the app itself still warrants investment, and where it may not. All data, figures, and dashboards below are mock — built to represent the kind of GA4 and myki data we would have direct access to under this engagement, and to demonstrate the analytical method against a known and verifiable real-world backdrop, not to represent Transport Victoria's actual reported results.
+This case study uses that real situation as its motivating context — to illustrate how a structured, phased GA4 analysis can find what work remains: where the app itself still needs investment, and where it may not. All data, figures, and dashboards below are mock — built to represent the kind of GA4 and myki data we could access under this engagement, and to demonstrate the analytical method against a known and verifiable real-world backdrop. The mock data does not represent Transport Victoria's actual results.
 
-Transport Victoria's digital team maintains four core features across their app and website: real-time departures, saved trips, disruption alerts, and the journey planner itself. Each feature had usage on both platforms, but no one could say with confidence whether that reflected genuine need for both, or just usage nobody had looked at closely enough to challenge.
+Transport Victoria's digital team maintains four core *features* across their app and website: real-time departures, saved trips, disruption alerts, and the journey planner itself. Each feature had usage on both platforms. For this analysis we assume that no one could say with confidence if this usage showed real need for both platforms, or usage that nobody had looked at closely enough to justify investment in across both platforms.
 
-Transport Victoria needed to answer three specific questions before committing the next development cycle:
+Transport Victoria needed to answer three specific questions before it commits the next development cycle:
 
-1. **Platform exclusivity** — should a feature exist on app only, web only, or both?
-2. **Dev priority** — within available capacity, what gets built next?
-3. **Retirement candidates** — what's costing maintenance but barely used, on either platform?
+1. **Platform exclusivity** — should a feature exist on the app only, the website only, or both?
+2. **Development priority** — within available development time, what should the team build next?
+3. **Retirement candidates** — which feature costs money to maintain but has low usage on either platform?
 
 ### Actions {#overview-actions}
 
-Rather than running a single usage-split analysis, we built a phased decision framework: deliberately structured so that easy calls could be made quickly, and only genuinely ambiguous cases would take further analytical effort.
+Rather than running a single usage-split analysis, we built a phased decision framework. The framework is structured so that the team can make easy decisions quickly, ensuring only genuinely ambiguous cases would take further analytical effort.
 
-- **Phase 0** audited and found a single GA4 property across app and web, so cross-platform comparison was possible
-- **Phase 1** used the raw usage split to fast-track a decision on any feature with an unambiguous app-web use gap
-- **A stakeholder checkpoint** redirected scope where usage data alone wasn't the right focus — for example, a feature with a legislative communication obligation
-- **Phase 2** added device, timing, and user-type context to the features that weren't resolved by the raw split
-- **Phase 3** synthesised every finding into a confidence-tiered recommendation, flagging which conclusions were directly observed and which were inferred
-- **Scenario B** (once a privacy impact assessment cleared) linked web sessions to physical smartcard touch-on/off data, to confirm (rather than assume) the one recommendation that had rested on an inference. The PIA was submitted for this during Phase 0
+- **Phase 0** checked that a single GA4 property covered both the app and the website, so cross-platform comparison was possible
+- **Phase 1** used the raw usage split to make a fast decision on any feature with a clear gap between app use and web use
+- **A stakeholder checkpoint** changed the scope of the analysis for a feature where usage data alone wasn't the right focus. For example, where a feature had a legal requirement for communication
+- **Phase 2** added context about device type, time of day, and user type to the features that weren't resolved by the raw split during Phase 1
+- **Phase 3** combined every finding into one recommendation list. Each recommendation carries a confidence label. The label shows which findings came from direct observation and which were inferred
+- **Scenario B** linked web sessions to physical smartcard touch-on and touch-off data once a privacy impact assessment (PIA) cleared. We submitted the PIA during Phase 0. Before the PIA cleared, we planned this step under 'Scenario A'. This step (once PIA did clear) confirmed one recommendation that had rested on an inference. The team did not simply assume that inference was correct.
 
 ### Results {#overview-results}
 
-Every one of the three questions above now has an evidence-backed answer:
+Every one of the three questions above now has an answer, supported by evidence:
 
 **Platform exclusivity**
 
-- One feature is moving toward app-exclusive, phased over 6 months
-- One feature was confirmed as genuinely dual-platform, backed by a physical-movement data linkage
-- One feature stays dual-platform by design, once reframed away from a pure usage-share question
+- One feature (saved_trips) is moving toward app-only status. The department will phase in this change over 6 months
+- One feature (journey_planner) is confirmed as a genuine dual-platform feature. A physical movement data link supports this finding
+- One feature (disruption_alerts) stays on both platforms by design. The team reframed the question away from a simple usage-share comparison
 
-**Dev priority**
+**Development priority**
 
-- Highest priority: a channel-effectiveness fix, backed directly by measured user-action data: implement a "replan trip" call to action in the web banner.
-- Next: a conversion-focused addition to the web journey planner, backed by the smartcard linkage: add an app download link at the point of web planning.
-- No further build recommended for the two lower-priority features this cycle.
+- Highest priority: a channel-effectiveness fix. Measured user-action data supports this fix directly: to add a "replan trip" button to the web alert banner
+- Next priority: a new feature for the web journey planner aimed at increasing web downloads, backed by the smartcard linkage: to add an app download link at the point where a user plans a trip on the web
+- We do not recommend further development for the two lower-priority features this cycle.
 
 **Retirement candidates**
 
-- One feature flagged for a formal retirement review in 6 months: saved_trips
-- No feature met the bar for immediate removal
+- No feature looked like a clear case for immediate removal
+- We flagged the web version of one feature (saved_trips) for a formal retirement review in 6 months
 
 ### Growth/Next Steps {#overview-growth}
 
-The real_time_departures feature originally deferred by capacity, rather than by evidence, remains open. The case for continued investment there is already strong, but was not formally re-examined once development resources were redirected elsewhere. The smartcard linkage pipeline built for this project is reusable for future features.
+We originally deferred the real_time_departures feature due to limited development capacity, not due to weak evidence. This question remains open. The case for continued investment in this feature is already strong, but was not formally re-examined once development resources were redirected elsewhere. We can reuse the smartcard linkage pipeline built for this project for future features.
 
-### Key Definition {#overview-definition}
+### Key Definitions {#overview-definition}
 
-Throughout this write-up we refer to a recommendation's **confidence tier**:
+This report refers to a recommendation's **confidence tier**. We define three tiers:
 
-- **Observed** — built directly from a measured event (a click, a usage rate, an action taken). Nothing left open to interpretation between the data and the conclusion.
-- **Directional** — built from a pattern that's real, but whose *meaning* required an inference (e.g., "this usage pattern probably reflects planning ahead, rather than idle browsing").
-- **Confirmed** — a directional finding that was subsequently checked against an independent, harder form of evidence and held up.
+- **Observed** — We built this tier directly from a measured event. Examples include a click, a usage rate, or an action taken. The conclusion needs no interpretation
+- **Directional** — We built this tier from a real pattern. The meaning of the pattern needed an inference. For example: "this usage pattern probably shows planning ahead, not idle browsing"
+- **Confirmed** — this tier started as a directional finding. We then checked the finding against an independent, stronger form of evidence. The finding held up under this check
 
-This distinction is important, since two of our three headline decisions rested entirely on Observed evidence and only one ever needed the Confirmed tier.
+This distinction proved important, since while two of the three decisions rested entirely on observed evidence, one decision required the Confirmed tier.
 
 We also distinguish two **scenarios**, depending on whether the pending privacy approval had cleared at the time a recommendation was delivered:
 
-- **Scenario A** — the report as it could be delivered using GA4 data alone, before the privacy impact assessment (PIA) cleared. Complete and actionable on its own; any Directional finding would ship with its confidence explicitly labelled.
-- **Scenario B** — the same report, updated once the PIA cleared and smartcard touch-on/touch-off data became available to test the one Directional finding against.
+- **Scenario A** — this is the report we could deliver using GA4 data alone, before the privacy impact assessment (PIA) cleared. This version is complete and actionable on its own. Any directional finding would ship with its confidence tier clearly labelled as 'Directional'.
+- **Scenario B** — this is the same report, updated after the PIA cleared. Smartcard touch-on and touch-off data became available at this point. The team used this data to test the one Directional finding, strengthening its evidence-base to Confirmed.
 
 ---
 
