@@ -204,6 +204,8 @@ Math.round(...) rounds that to a whole minute.
 
 return hands this final number back to GTM, which then attaches it to the feature_engaged event as the lookup_lead_time_min parameter — ready for use in GA4.
 
+In block 1: routeId is available but should be read from the specific departure result being logged, in case one stop maps to more than one route.
+
 ### Validation
 
 A platform breakdown check confirmed that both app platforms and the website reported data consistently. We ran this check before the baseline window began. This check would have caught a version-drift issue, if one had existed. For example, one platform's software build might predate a schema update.
