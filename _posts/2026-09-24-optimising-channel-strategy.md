@@ -178,19 +178,21 @@ dataLayer.push({
 
 then configured the minutes-until-departure calculation as a GTM variable (Block 2):
 
+{% raw %}
 ```javascript
 // GTM Custom JavaScript variable, referenced by the
 // feature_engaged tag as the lookup_lead_time_min parameter
 function() {
-  var departure = new Date('{{DLV - departure_time}}');
-  var lookup = new Date('{{DLV - lookup_time}}');
+  var departure = new Date({{DLV - departure_time}});
+  var lookup = new Date({{DLV - lookup_time}});
   return Math.round((departure - lookup) / 60000);
 }
 ```
+{% endraw %}
 
 Block 2 is a GTM Custom JavaScript Variable — a small function GTM runs on demand.
 
-'{{DLV - departure_time}}' and '{{DLV - lookup_time}}' are GTM's syntax for "Data Layer Variable" — they reach back into the dataLayer and pull out the two values Block 1 pushed.
+{% raw %}{{DLV - departure_time}}{% endraw %} and {% raw %}{{DLV - lookup_time}}{% endraw %} are GTM's syntax for "Data Layer Variable" — they reach back into the dataLayer and pull out the two values Block 1 pushed.
 
 new Date(...) converts each of those ISO text strings back into actual JavaScript date objects, so they can be subtracted.
 
