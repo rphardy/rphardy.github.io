@@ -225,6 +225,7 @@ Raw `feature_engaged` usage rate by platform, across all four features, over the
 This query works in three stages, each building on the last:
 
 #### Stage 1
+
 Pull the raw event data, and sort every user into "app" or "web." GA4 records the app's two platforms (iOS and Android) separately, but we report app to web as a whole. The first step collapses iOS and Android into a single APP group, keeping web as its own group. Because every phase from here on depends on this same definition, it's created once as a standalone table:
 
 ```sql
@@ -268,6 +269,7 @@ note that the column event_name has been scoped (in next steps) to events where 
 
 
 #### Stage 2 
+
 Count two different things, side by side. From that pool of events, the query counts:
 * Active users — anyone who did anything at all on each platform in the 21-day window (the denominator)
 * Engaged users — of those, anyone who specifically interacted with one of the four features being studied, broken out feature by feature (the numerator)
@@ -302,7 +304,8 @@ feature_users AS (
 ```
 
 #### Stage 3 
-Divide the two, per feature and per platform. The final step joins those two counts together and calculates what share of each platform's active users actually engaged with each feature — this is the usage rate percentage that appears as the bars in the Phase 1 chart.
+
+Divide the two, per feature and per platform. The final step joins those two counts together and calculates what share of each platform's active users actually engaged with each feature. This percentage is the usage rate shown as bars in the Phase 1 chart.
 
 ```sql
 
@@ -318,6 +321,7 @@ JOIN active_users a USING (platform_group)
 ORDER BY
  f.feature_name,
  f.platform_group;
+
 ```
 
 ### Baseline Feature Usage Dashboard
@@ -326,11 +330,11 @@ ORDER BY
 
 ### Gate 1 — Fast-Track Check
 
-Any feature with an unambiguous platform gap (roughly, under 10% usage on one platform against over 50% on the other) is resolved immediately, without waiting on further analysis.
+A feature with a clear platform gap needs no further analysis. We define a clear gap as roughly under 10% usage on one platform against over 50% usage on the other platform. We resolve this type of feature immediately.
 
-**saved_trips** cleared this outright — 9% engagement on web against 61% on app — and was resolved here, permanently, regardless of anything that followed.
+**saved_trips** met this criteria directly. The feature had 9% engagement on the website against 61% engagement on the app. Thus we resolved this feature at this point, to be developed in future cycles as app-only.
 
-Interaction depth on web sharpens the case further: of that 9%, most only viewed the feature without creating a saved trip.
+The interaction depth data on the website strengthens this case further. Within that 9% figure, most users only viewed the feature. These users did not create a saved trip.
 
 A user who completes a saved trip typically also triggers a `viewed` and an `interacted` event along the way, so counting every event at every depth would count the same person three times. Each user is instead classified by the deepest stage they reached, ranking `completed` above `interacted` above `viewed`, before counting:
 
@@ -357,7 +361,9 @@ user_max_depth AS (
   FROM
    `project.analytics_derived.baseline_events_21d`
   WHERE
-   platform_group = 'WEB' AND event_name = 'feature_engaged' AND (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') = 'saved_trips'
+   platform_group = 'WEB' AND 
+   event_name = 'feature_engaged' AND 
+   (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') = 'saved_trips'
   GROUP BY
    user_pseudo_id
 )
@@ -378,25 +384,25 @@ ORDER BY
  depth_rank DESC;
 ```
 
-This returns 7% viewed, 1.5% interacted, and 0.5% completed — summing to the 9% headline rate, with no user counted twice.
+This returns 7% viewed, 1.5% interacted, and 0.5% completed. These three figures sum to the 9% headline rate. No user is counted twice.
 
 ### Outcome
 
-One of four features resolved on Observed evidence alone. The remaining three carried forward.
+We resolved one of the four features using Observed evidence alone. The remaining three features carried forward to the next phase.
 
 ---
 
 # Stakeholder Checkpoint {#checkpoint}
 
-Not every open question is best answered by more usage data. At this point the remaining three features were reviewed with the client team directly, and the scope was adjusted:
+Not every open question is best answered by more usage data. At this point, we reviewed the remaining three features with the client team directly. We adjusted the scope as follows::
 
-- **journey_planner** was escalated as the clear development priority, since its raw usage pattern actively contradicted the working assumption about how app and web were being used. The working assumption going in was that the app would see the heaviest use of core features like trip planning, with web serving as a secondary, occasional-use channel. The raw usage split inverted this: 88% of web's active users engaged with journey_planner, against only 45% on app, the opposite of what the assumption predicted. This unexpected engagement direction prioritised the feature for closer analysis.
-- **disruption_alerts** was reframed entirely — from a platform-investment question to a channel-effectiveness question — after the communications team flagged a consistency obligation across all alert channels that usage share alone couldn't capture
-- **real_time_departures** was deferred, with the team accepting its already-strong usage gap (82% vs 34%) as sufficient for app-first development, rather than spending further analytical effort on this split given that **journey_planner** had been escalated.
+- **journey_planner** — the client team escalated this feature as the clear development priority, since its raw usage pattern actively contradicted the working assumption about how app and web were being used. The working assumption was that the app would see the heaviest use of core features, such as trip planning. The assumption predicted that the website would serve as a secondary, occasional-use channel. However, the raw usage split showed the opposite result: 88% of the website's active users engaged with journey_planner, against only 45% on the app - the opposite of the prediction. This unexpected result made the feature the clear priority for closer analysis
+- **disruption_alerts** was reframed entirely — from a platform-investment question to a channel-effectiveness question. The communications team flagged a consistency requirement across all alert channels. A simple usage-share comparison could not capture this requirement
+- **real_time_departures** was deferred, with the client team accepting its already-strong usage gap, 82% against 34%, as sufficient evidence for continued app-first development. The team chose not to spend further analysis time on this feature, because journey_planner had already become the priority
 
 ### Outcome
 
-**journey_planner** proceeds to Phase 2 on its original terms; **disruption_alerts** proceeds on reframed terms; **real_time_departures** exits the active analysis by decision, not by evidence.
+**journey_planner** proceeds to Phase 2, under its original terms. **disruption_alerts** proceeds to Phase 2, under reframed terms. **real_time_departures** is deferred, exiting the active analysis by a team decision, not because of weak evidence.
 
 ---
 
