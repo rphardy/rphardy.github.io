@@ -1,6 +1,6 @@
 ---
 layout: post
-title: WIP - Optimising App & Web Channel Strategy Using GA4 & Smartcard Data
+title: Optimising App & Web Channel Strategy Using GA4 & Smartcard Data
 image: /posts/ga4-pt-app-v-web-title-img2.png
 tags: [GA4,Transport,Decision Framework,Python, BigQuery]
 ---
