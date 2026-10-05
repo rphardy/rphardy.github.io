@@ -877,7 +877,13 @@ baseline_day_pick AS (
    candidate_date
   FROM
    baseline_days
-  QUALIFY ROW_NUMBER() OVER (PARTITION BY user_pseudo_id ORDER BY RAND()) = 1 #for each user, keep exactly one randomly chosen row from their set of candidate dates - operates after window function. WHERE would operate before the window function. QUALIFY is supported by SQL BigQuery - but not by all SQL systems.
+  -- The next line keeps exactly one randomly chosen row per user, from their
+  -- set of candidate dates. QUALIFY filters on a window function's
+  -- result, after it's computed — WHERE can't do this, since it
+  -- filters before window functions run. BigQuery, Snowflake, and
+  -- Databricks support QUALIFY; standard PostgreSQL, MySQL, and
+  -- SQL Server do not.
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY user_pseudo_id ORDER BY RAND()) = 1
 ),
 
 baseline_stop_pick AS (
