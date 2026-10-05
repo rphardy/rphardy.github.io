@@ -877,7 +877,7 @@ baseline_day_pick AS (
    candidate_date
   FROM
    baseline_days
-  QUALIFY ROW_NUMBER() OVER (PARTITION BY user_pseudo_id ORDER BY RAND()) = 1
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY user_pseudo_id ORDER BY RAND()) = 1 #for each user, keep exactly one randomly chosen row from their set of candidate dates - operates after window function. WHERE would operate before the window function. QUALIFY is supported by SQL BigQuery - but not by all SQL systems.
 ),
 
 baseline_stop_pick AS (
