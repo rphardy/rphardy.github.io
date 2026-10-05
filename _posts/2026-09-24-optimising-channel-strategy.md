@@ -745,7 +745,9 @@ Of 36,260 web `journey_planner` users, we linked 2,176 users to a smartcard - 6.
 This sample is too small to support further segments in the next step: a deterministic check, for example by device or by time-of-day. 
 It is large enough however, for one aggregate figure, to next check touch-on events against planned origin.
 
+
 ### Tier 1 — Deterministic Check
+
 
 For the 2,176 linked users, each web `journey_planner` session is checked against a touch-on at that same session's planned origin stop, within 24 hours. An account with more than one linked card counts as matched if *any* of its cards touch on. Matching is at the person level, not the card level.
 
@@ -883,7 +885,8 @@ baseline_day_pick AS (
   -- filters before window functions run. BigQuery, Snowflake, and
   -- Databricks support QUALIFY; standard PostgreSQL, MySQL, and
   -- SQL Server do not.
-  QUALIFY ROW_NUMBER() OVER (PARTITION BY user_pseudo_id ORDER BY RAND()) = 1
+  QUALIFY 
+   ROW_NUMBER() OVER (PARTITION BY user_pseudo_id ORDER BY RAND()) = 1
 ),
 
 baseline_stop_pick AS (
@@ -892,7 +895,8 @@ baseline_stop_pick AS (
    origin_stop_id
   FROM
    user_origin_stops
-  QUALIFY ROW_NUMBER() OVER (PARTITION BY user_pseudo_id ORDER BY RAND()) = 1
+  QUALIFY 
+   ROW_NUMBER() OVER (PARTITION BY user_pseudo_id ORDER BY RAND()) = 1
 ),
 
 baseline_reference AS (
@@ -948,16 +952,19 @@ FROM
 
 The baseline rate is 11%, placing the actual sessions' 39% at roughly a 3.5× lift. One caveat to this lift figure is worth noting clearly: the actual sessions' planning timestamps are real, but the baseline's is a synthetic stand-in: a randomly chosen moment on a day when the user did not plan a trip. This baseline is the closest symmetric comparison available, but it is not a perfect comparison. Thus the 39% and 11% figures shouldn't be read as equally precise measurements.
 
+
 ### Tier 2 — Cohort Check
 
-Tier 1 only reaches the 6% of `journey_planner` web users who are logged in and myki-linked — a population skewed toward habitual users, which is the opposite of the group Phase 2 found web usage actually over-represents. Tier 2 checks the same question at population scale instead, using only aggregate hourly volume on both sides, with no individual matching at all.
 
-Rather than assuming where a web planning session and a resulting trip would line up in time, this checks a full range of lags and lets the data show where the relationship is strongest.
+Tier 1 only reaches the 6% of `journey_planner` web users who are logged in and linked to myki. This population skews toward habitual users. Phase 2 found earlier that web usage as a whole over-represents the opposite group: new users. Tier 2 checks the same question at population scale instead, comparing hourly GA4 session volume against hourly touch-on volume, with no individual-level matching between the two.
+
+For this, we did not assume where a web planning session and a resulting trip would line up in time. Instead, this check tests a full range of time lags and lets the data show where the relationship is strongest.
+
 
 ```sql
 -- First look: correlation between journey_planner session volume and
 -- touch-on volume, at a spread of lags, per platform and device.
--- Aggregate counts only — no individual identity is used.
+-- Aggregate counts only, no individual identity is used.
 
 WITH hourly_sessions AS (
   SELECT
@@ -968,7 +975,8 @@ WITH hourly_sessions AS (
   FROM
    `project.analytics_derived.baseline_events_21d`
   WHERE
-   event_name = 'feature_engaged' AND (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') = 'journey_planner'
+   event_name = 'feature_engaged' AND 
+   (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') = 'journey_planner'
   GROUP BY
    session_hour,
    platform_group,
@@ -1022,7 +1030,7 @@ ORDER BY
 | WEB | desktop | 27 | 0.57 |
 | WEB | desktop | 30 | 0.50 |
 
-Each group shows a clear rise and fall around a different point — the app peaks and falls off within a couple of hours, while both web device types stay elevated across a much wider band a day later. Rather than reading the peak off this shortlist by eye, the full scan is swept automatically and the single best lag per group is kept:
+Each group shows a clear rise and fall, around a different point in time. The app peaks and falls off within a couple of hours, while both web device types stay elevated across a much wider band a day later. Instead of finding the peak by eye from this short list, the next query sweeps the full range automatically. The query then keeps only the single best lag value (by strongest correlation) for each group:
 
 ```sql
 -- Full scan: sweep every hourly lag from 0 to 36h and keep only
@@ -1037,7 +1045,8 @@ WITH hourly_sessions AS (
   FROM
    `project.analytics_derived.baseline_events_21d`
   WHERE
-   event_name = 'feature_engaged' AND (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') = 'journey_planner'
+   event_name = 'feature_engaged' AND 
+   (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') = 'journey_planner'
   GROUP BY
    session_hour,
    platform_group,
@@ -1080,27 +1089,34 @@ SELECT
  ROUND(correlation, 2) AS correlation
 FROM
  lag_correlations
-QUALIFY ROW_NUMBER() OVER (
+QUALIFY 
+ ROW_NUMBER() OVER (
   PARTITION BY platform_group, device_category ORDER BY correlation DESC
-) = 1
+  ) = 1
 ORDER BY
  platform_group,
  device_category;
 ```
 
-The peak lag itself is part of the finding, not just the correlation strength at it: app `journey_planner` engagement peaks at 1 hour (r=0.74), desktop web at 24 hours (r=0.61), mobile web at 27 hours (r=0.58). App usage is tied almost immediately to a trip; both web device types sit roughly a day ahead of one, and land close enough to each other that device isn't what's driving the difference from app.
+| platform_group | device_category | lag_hours | correlation |
+|---|---|---|---|
+| APP | mobile | 1 | 0.74 |
+| WEB | desktop | 24 | 0.61 |
+| WEB | mobile | 27 | 0.58 |
 
-One limitation worth noting: a correlation computed over roughly 500 hourly buckets (21 days × 24 hours) per group carries a wider margin than the two-decimal figures suggest — enough to trust the shape and ordering across groups, not enough to treat 0.58 versus 0.61 as a meaningful difference between the two device types.
+The peak lag value is itself part of the finding, not only the correlation strength at that point. App `journey_planner` engagement peaks at 1 hour (r=0.74), desktop web at 24 hours (r=0.61), mobile web at 27 hours (r=0.58). App usage links to a trip almost immediately. Both web device types sit roughly a day ahead of a trip. The two web device types sit close enough to each other that device type is not the cause of the difference from the app.
+
+One limitation is worth noting. A correlation computed over roughly 500 hourly buckets, 21 days times 24 hours, per group, carries a wider margin of error than the two-decimal figures suggest. We can trust the shape and the ordering across groups but we should not treat the difference between 0.58 and 0.61 as meaningful between the two device types.
 
 ![alt text](/img/posts/scenario-b-confirmation.png "Smartcard Linkage Confirmation")
 
 ### Outcome
 
-Tier 1's 39% touch-on rate against an 11% baseline is a real lift, but it rests on a thin, wide-margin sample of only 2,176 linked users — precise about direction, less precise about magnitude. Tier 2 answers a different question entirely, using the full population with no identity linkage at all: it finds that a `journey_planner` session's timing relationship to a touch-on peaks at 24–27 hours later on web, regardless of device, and peaks almost immediately, at 1 hour, on app.
+Tier 1's 39% touch-on rate, against an 11% baseline, is a real lift. This result rests on a thin, wide-margin sample of only 2,176 linked users. Thus, the result is precise about direction and less precise about size. Tier 2 answers a different question, using the full population with no identity linkage. It finds that a `journey_planner` session's timing link to a touch-on peaks at 24 to 27 hours later on the website, regardless of device. On the app, this link peaks almost immediately, at 1 hour.
 
-Neither check alone would have closed Gate 3A. A small deterministic sample can show the right direction without ruling out that its 6% linked population isn't representative; a population-scale correlation can show the right timing pattern without ever confirming that any single trip was actually planned in advance. Together, they cover each other's blind spot — Tier 1 confirms the *magnitude* for the subset who logged in, Tier 2 confirms the *pattern* holds across everyone, including the 94% Tier 1 could never see.
+Neither check alone could have closed Gate 3A. For Tier 1: a small deterministic sample can show the correct direction. However, this sample may have had a 6% linked population that is unrepresentative. For Tier 2: A population-scale correlation can show the correct timing pattern. However, this correlation cannot confirm that any single trip was actually planned in advance. Together, the two checks cover each other's weak point. Tier 1 confirms the *size* of the effect for the subset of users who logged in. Tier 2 confirms that the *pattern* holds across everyone, including the 94% of users that Tier 1 could never see.
 
-With both pointing the same direction, journey_planner moves from Directional to Confirmed. The recommendation itself doesn't change — dual-platform, with an app-download prompt at the point of web planning — but it now rests on two independent forms of evidence rather than one inferred pattern.
+Both checks point in the same direction. For this reason, journey_planner moves from Directional to Confirmed. The recommendation itself does not change: keep the feature on both platforms, and add an app-download prompt at the point of web planning. The recommendation now rests on two independent forms of evidence, instead of one inferred pattern. The smartcard linkage confirmed the Phase 2 finding, and Gate 3A is now closed for the last remaining feature: journey_planner.
 
 ---
 
@@ -1113,16 +1129,16 @@ With both pointing the same direction, journey_planner moves from Directional to
 | disruption_alerts | Redesign the web alert with an explicit "replan trip" call to action | Observed |
 | real_time_departures | Continue app-first investment; no new analysis this cycle | Deferred |
 
-Two of the three project decisions — platform exclusivity and retirement candidates — were resolved almost entirely on Observed evidence. The physical-movement linkage mattered for exactly one recommendation, which is itself a useful finding: the higher-governance data source was worth requesting for a narrow, specific reason, not as a blanket assumption that more data is always better.
+Two of the three project decisions, platform exclusivity and retirement candidates, were resolved almost entirely on Observed evidence. The physical-movement linkage mattered for exactly one recommendation, which is itself a useful finding: the higher-governance data source was worth requesting for a narrow, specific reason, not as a blanket assumption that more data is always better.
 
 ---
 
 # Application {#application}
 
-The client's development team now has a ranked, evidence-based list of work, instead of a flat feature list. The disruption alert redesign leads this list, backed by directly measured action-rate data. The journey planner's app-download prompt follows, backed by the smartcard-confirmed conversion case. The team plans no further web investment for the saved trips feature, pending its 6-month retirement review.
+The client's development team now has a ranked, evidence-based list of work, instead of a flat feature list. The disruption alert redesign leads this list, backed by directly measured action-rate data. The journey planner's app-download prompt follows, backed by the smartcard-confirmed conversion case. We recommend no further web investment for the saved trips feature, pending its 6-month retirement review.
 
 ---
 
 # Growth & Next Steps {#growth-next-steps}
 
-The client's development team deferred one feature due to limited capacity: `real_time_departures`. This feature still has an open, evidence-backed case for continued app investment that was never formally revisited once the team's attention moved elsewhere. The smartcard linkage pipeline built for this project remains available for any future feature whose recommendation rests on an inference rather than a direct measurement.
+The client's development team deferred one feature due to limited capacity: `real_time_departures`. This feature still has an open, evidence-backed case for continued app investment that was never formally revisited once the team's attention moved elsewhere. The smartcard linkage pipeline built for this project remains available for any future feature whose inferred recommendation a physical movement record could actually confirm or refute.
