@@ -20,7 +20,7 @@ Our client, a state transport department, runs its journey planning, ticketing, 
 - [03. Phase 0: Instrumentation](#phase-0)
 - [04. Phase 1: GA4 Baseline](#phase-1)
 - [05. Stakeholder Checkpoint](#checkpoint)
-- [06. Phase 2: Proxy-Context Analysis](#phase-2)
+- [06. Phase 2: Inferring User Intent](#phase-2)
 - [07. Phase 3: Synthesis & Confidence Tiers](#phase-3)
 - [08. Scenario B: Smartcard Linkage](#scenario-b)
 - [09. Decision Summary](#decision-summary)
@@ -406,17 +406,17 @@ Not every open question is best answered by more usage data. At this point, we r
 
 ---
 
-# Phase 2: Proxy-Context Analysis {#phase-2}
+# Phase 2: Inferring User Intent {#phase-2}
 
 ### Evidence Gathered
 
-For the escalated feature, **journey_planner**, we layered in device category (mobile web vs. desktop web), time-of-day clustering, and new-vs-returning user share — none of which are visible in a simple platform split.
+For the escalated feature, **journey_planner**, we added three layers of context: device category (mobile web versus desktop web), time-of-day pattern, and the share of new users against returning users. A platform split could not directly show these factors on its own.
 
 ### First Look to Formal Query
 
-Each cut started with a simple pass at the data, before deciding what — if anything — needed to be measured more precisely. All three read from the baseline table created in Phase 1, so every query below inherits identical platform and window definitions.
+Each cut started with a simple pass at the data, before deciding what — if anything — needed to be measured more precisely. All three queries below that form this analysis read from the baseline table created in Phase 1. For this reason, each query uses the same platform and window definitions.
 
-**Device category** began with a plain count of engaged users on mobile web against desktop web, which favoured mobile web.
+**Device category** started with a plain count of engaged users on mobile web against desktop web. This first count favoured mobile web.
 
 ```sql
 SELECT
@@ -425,13 +425,14 @@ SELECT
 FROM
  `project.analytics_derived.baseline_events_21d`
 WHERE
- platform_group = 'WEB' AND event_name = 'feature_engaged'
-  AND (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') = 'journey_planner'
+ platform_group = 'WEB' AND 
+ event_name = 'feature_engaged' AND
+ (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') = 'journey_planner'
 GROUP BY
  device_category;
 ```
 
-Dividing each device's engaged users by its own active-user base told a different story: desktop web engages at 93%, mobile web at 81% — both high, and much closer together than the raw counts suggested.
+We then divided each device's engaged users by its own active-user base. This calculation told a different story: desktop web engages at 93%, mobile web at 81%. Both rates are high, and much closer together than the raw counts suggested.
 
 ```sql
 WITH active_users AS (
@@ -471,7 +472,7 @@ ORDER BY
  f.device_category;
 ```
 
-**Timing** showed its shape early. A simple per-hour count of `journey_planner` activity, split by platform, produced two distinct patterns: app usage spiking sharply around the AM and PM commute windows, web usage sitting comparatively flat and tilted toward evenings.
+**Timing** showed a clear pattern early. A simple per-hour count of `journey_planner` activity, split by platform, produced two distinct patterns: app usage spiked sharply around the morning and evening commute hours. Website usage stayed comparatively flat, with a tilt toward evenings.
 
 ```sql
 SELECT
@@ -491,7 +492,7 @@ ORDER BY
  local_hour;
 ```
 
-That shape set the peak/off-peak boundary used for the rest of the analysis (7–9am, 4–6pm). Splitting further by device within web sharpened the comparison: 27% peak / 73% off-peak on mobile, 19% peak / 81% off-peak on desktop — both far closer to each other than either is to the app's 72% peak share.
+This pattern set the peak and off-peak boundary for the rest of the analysis: 7–9am and 4–6pm count as peak hours. We then split this data further by device, within the web platform. This split sharpened the comparison: mobile web showed 27% peak usage and 73% off-peak usage. Desktop web showed 19% peak usage and 81% off-peak usage. These two web figures sit far closer to each other than either figure sits to the app's 72% peak share.
 
 ```sql
 WITH classified_events AS (
@@ -527,7 +528,7 @@ ORDER BY
  time_window;
 ```
 
-**New versus returning** users showed a large, clear gap from the outset.
+**New versus returning** users showed a large, clear gap from the start.
 
 ```sql
 -- Baseline window start (2026-08-11) must match the _TABLE_SUFFIX
@@ -546,7 +547,7 @@ GROUP BY
  is_new;
 ```
 
-Counting once per user rather than once per engagement event held the split at 81% returning on app against 64% new on web — close to the inverse of each other.
+We counted each user once, instead of once per engagement event. This method held the split at 81% returning users on the app, against 64% new users on the website. These two figures are close to the inverse of each other.
 
 ```sql
 -- Baseline window start (2026-08-11) must match the _TABLE_SUFFIX
@@ -559,8 +560,8 @@ WITH engaged_users AS (
   FROM
    `project.analytics_derived.baseline_events_21d`
   WHERE
-   event_name = 'feature_engaged'
-    AND (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') = 'journey_planner'
+   event_name = 'feature_engaged' AND
+   (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'feature_name') = 'journey_planner'
 )
 
 SELECT
@@ -574,9 +575,13 @@ GROUP BY
  is_new;
 ```
 
-Together, these three cuts rule out three different alternative explanations for the same question. Device category rules out "it's simply a desktop tool." Timing rules out "web usage happens throughout the day the same way app usage does, just less often." New-vs-returning rules out "the same core group of people just prefer using web sometimes." What's left, once each of those is set aside, is the interpretation carried into the next section: that web usage clusters ahead of travel, largely independent of which device it happens on, and disproportionately belongs to people who haven't installed the app yet.
+Together, these three cuts rule out three different alternative explanations for the same question. The device category cut rules out the explanation "it's simply a desktop tool" by the engagement pattern shown. The timing cut rules out the explanation "web usage happens throughout the day the same way app usage does, just less often" by the peak/off-peak use pattern. The new-versus-returning cut rules out the explanation "the same core group of people just prefer using the website sometimes" by the difference in usage between new and returning users. 
+
+What's left, once each of those is set aside, is the interpretation carried into the next section: web usage clusters ahead of travel, largely independent of device, and this usage disproportionately belongs to people who have not yet installed the app.
+
 
 ### Disruption Alerts: Channel and Outcome
+
 
 For the reframed feature, no first look was needed: alert channel and the action taken are both recorded directly on each engagement event, so both cuts are simple shares of `disruption_alerts` engagement events (one event per alert interaction, as defined in the Data Overview).
 
@@ -626,13 +631,15 @@ ORDER BY
  alert_action;
 ```
 
-### Proxy-Context Dashboard
+### User Intent Dashboard
 
 ![alt text](/img/posts/phase2-proxy-context-analysis.png "Proxy-Context Analysis")
 
 ### Outcome
 
-The escalated feature's usage pattern was reframed from an app-vs-web story to a pre-trip-vs-in-transit one — directionally supported, but resting on an inference about user intent that the data alone couldn't fully confirm. The reframed feature's fix (redesigning the web alert's call to action) was resolved directly, with no inference involved.
+We reframed the escalated feature's usage pattern, from an app-versus-web comparison to a pre-trip-versus-in-transit comparison. Three findings support this reframe: web engagement rates are close between mobile and desktop (81% vs 93%), ruling out a simple desktop-tool explanation; web usage clusters off-peak (73–81%) while app usage clusters in commute peaks (72%), pointing to a difference in when people act rather than where; and web skews toward new users (64%) while the app skews toward returning users (81%), suggesting the two platforms serve different moments in a traveller's journey, not just different audiences. Together, these findings support a directional conclusion, that people use the website to plan ahead and the app to travel in the moment, but this remains an inference about user intent, since the data alone cannot fully confirm it. 
+
+Based on this, we recommend reframing the feature's fix directly: redesign the web alert's call to action.
 
 ---
 
@@ -640,23 +647,23 @@ The escalated feature's usage pattern was reframed from an app-vs-web story to a
 
 ### Evidence Gathered
 
-Every finding from Phases 1 and 2 was reorganised into the three confidence tiers defined above, rather than presented as a single undifferentiated recommendation list.
+This step reorganises every finding from Phases 1 and 2 into the three confidence tiers defined earlier: classified as one of Observed, Directional, or Confirmed.
 
 ![alt text](/img/posts/phase3-synthesis.png "Confidence-Tiered Synthesis")
 
 ### Gate 3A — Which Findings Need Further Confirmation?
 
-Only a recommendation resting on an inferred interpretation is a candidate for further confirmation. Of the three resolved features at this point, only one qualified — the reframed alert-channel fix and the fast-tracked feature from Phase 1 were both already Observed, with nothing a further data source could sharpen.
+Only a recommendation that rests on an inferred interpretation needs further confirmation. Of the three resolved features at this point, only one recommendation qualified. The reframed alert-channel fix and the fast-tracked feature from Phase 1 were both already Observed. No further data source could add precision to these two findings.
 
 ### Outcome
 
-Two recommendations shipped as final at this stage. One was flagged, explicitly, as directional and worth revisiting if stronger evidence became available.
+We shipped two recommendations as final at this stage (for **saved_trips** - stop new development investment on web, and for **disruption_alerts** - implement the 'replan trip' CTA on the web banner). We flagged one recommendation explicitly as directional (for **journey_planner** - don't deprioritise web development, account for usage pattern on web). This recommendation is worth revisiting if stronger evidence becomes available.
 
 ---
 
 # Scenario B: Smartcard Linkage {#scenario-b}
 
-Once a pending privacy impact assessment cleared, we had access to physical smartcard touch-on/touch-off records — a genuinely independent form of evidence for the one flagged recommendation. These data are stored in two external tables (account_card_bridge, touch_events) which appear as:
+Once a pending privacy impact assessment cleared, we gained access to physical smartcard touch-on/touch-off records — a genuinely independent form of evidence for the one flagged recommendation. These data are stored in two external tables (account_card_bridge, touch_events) which appear as:
 
 transport_core.account_card_bridge
 
@@ -681,9 +688,11 @@ smartcard_derived.touch_events
 
 ### Sample-Size Check (Gate 2B)
 
-Only a small share of web journey_planner users could be linked to a smartcard — consistent with the new-user skew already found in Phase 2, since a first-touch audience is far less likely to already be logged in.
+Only a small share of web journey_planner users could be linked to a smartcard, matching the new-user skew that Phase 2 already found. A first-touch audience is far less likely to already be logged in.
 
-The link runs through GA4's user_id field, set only at login, bridged to the ticketing system's account-to-card mapping; where an account holds more than one card, the user is still counted just once.
+A link runs through GA4's user_id field. This field is set only at login and links to the ticketing system's account-to-card mapping. Where one account holds more than one card, the query still counts the user only once.
+
+We quantified: web-based journey planner users, logged in sessions, linked accounts and users, then calculated the percentage of distinct *users* that could be linked to a live session.
 
 ```sql
 WITH web_journey_planner_users AS (
@@ -732,11 +741,13 @@ FROM
 LEFT JOIN linked_users lu USING (user_pseudo_id);
 ```
 
-Of 36,260 web `journey_planner` users, 2,176 could be linked — 6.0%. That is too thin to support segmenting the deterministic check any further (by device, by time-of-day, and so on), but still enough for one aggregate figure.
+Of 36,260 web `journey_planner` users, we linked 2,176 users to a smartcard - 6.0%. 
+This sample is too small to support further segments in the next step: a deterministic check, for example by device or by time-of-day. 
+It is large enough however, for one aggregate figure, to next check touch-on events against planned origin.
 
 ### Tier 1 — Deterministic Check
 
-For the 2,176 linked users, each web `journey_planner` session is checked against a touch-on at that same session's planned origin stop, within 24 hours. An account with more than one linked card counts as matched if *any* of its cards touch on — matching is at the person level, not the card level.
+For the 2,176 linked users, each web `journey_planner` session is checked against a touch-on at that same session's planned origin stop, within 24 hours. An account with more than one linked card counts as matched if *any* of its cards touch on. Matching is at the person level, not the card level.
 
 ```sql
 WITH logged_in_sessions AS (
@@ -803,9 +814,9 @@ FROM
  matched;
 ```
 
-Across 2,910 web `journey_planner` sessions from linked users, 39% were followed by a touch-on at the planned origin within 24 hours; 22% within 3 hours.
+Across 2,910 web `journey_planner` sessions from linked users, a touch-on at the planned origin followed 39% of sessions within 24 hours. A touch-on followed 22% of sessions within 3 hours.
 
-That 39% only means something against a baseline. Rather than comparing to an unrelated stop or a user's single most-frequented one — either of which would distort the comparison in a different direction — each of the same 2,176 users gets one randomly chosen day on which they *didn't* plan a trip, paired with one of their own real origin stops and a random reference time, then checked against the identical 24-hour window.
+The 39% figure only has meaning when compared against a baseline. We did not compare this figure to an unrelated stop, or to a user's single most-frequent stop. Either choice would distort the comparison in a different direction. Instead, each of the same 2,176 users receives one randomly chosen day on which they did not plan a trip. We pair this day with one of the user's own real origin stops and a random reference time. We then check this pairing against the same 24-hour window.
 
 ```sql
 WITH linked_users AS (
@@ -929,7 +940,7 @@ FROM
  baseline_matched;
 ```
 
-The baseline rate comes back at 11% — putting the treatment's 39% at roughly a 3.5× lift. One asymmetry is worth stating plainly here: the treatment's planning timestamp is real, but the baseline's is a synthetic stand-in — a uniformly random moment on a day the user didn't plan a trip. It's the closest symmetric comparison available, not a perfect one, and the 39% and 11% shouldn't be read as equally precise measurements of the same kind.
+The baseline rate is 11%, placing the actual sessions' 39% at roughly a 3.5× lift. One caveat to this lift figure is worth noting clearly: the actual sessions' planning timestamps are real, but the baseline's is a synthetic stand-in: a randomly chosen moment on a day when the user did not plan a trip. This baseline is the closest symmetric comparison available, but it is not a perfect comparison. Thus the 39% and 11% figures shouldn't be read as equally precise measurements.
 
 ### Tier 2 — Cohort Check
 
