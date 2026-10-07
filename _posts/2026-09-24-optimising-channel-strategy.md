@@ -45,6 +45,7 @@ Transport Victoria needed to answer three specific questions before committing t
 2. **Development priority** — within available development time, what should the team build next?
 3. **Retirement candidates** — which feature costs money to maintain but has low usage on either platform?
 
+
 ### Actions {#overview-actions}
 
 Rather than running a single usage-split analysis, we built a phased decision framework. The framework is structured so that the team can make easy decisions quickly, ensuring only genuinely ambiguous cases would take further analytical effort.
@@ -55,6 +56,7 @@ Rather than running a single usage-split analysis, we built a phased decision fr
 - **Phase 2** added context about device type, time of day, and user type to the features that weren't resolved by the raw split during Phase 1
 - **Phase 3** combined every finding into one recommendation list. Each recommendation carries a confidence label. The label shows which findings came from direct observation and which were inferred
 - **Scenario B** linked web sessions to physical smartcard touch-on and touch-off data once a privacy impact assessment (PIA) cleared. We submitted the PIA during Phase 0. Before the PIA cleared, we planned this step under 'Scenario A'. This step (once PIA did clear) confirmed one recommendation that had rested on an inference. The team did not simply assume that inference was correct.
+
 
 ### Results {#overview-results}
 
@@ -77,9 +79,11 @@ Every one of the three questions above now has an answer, supported by evidence:
 - No feature looked like a clear case for immediate removal
 - We flagged the web version of one feature (saved_trips) for a formal retirement review in 6 months
 
+
 ### Growth/Next Steps {#overview-growth}
 
 We originally deferred the real_time_departures feature due to limited development capacity, not due to weak evidence. This question remains open. The case for continued investment in this feature is already strong, but was not formally re-examined once development resources were redirected elsewhere. We can reuse the smartcard linkage pipeline built for this project for future features.
+
 
 ### Key Definitions {#overview-definition}
 
@@ -120,6 +124,7 @@ We tracked usage across app and web using one custom GA4 event. We used paramete
 
 GA4 collects the platform, user_id, and device.category fields automatically. These don't require custom dimension registration, whereas the five event parameters above them are custom registered.
 
+
 # Methodology Overview {#methodology-overview}
 
 We answer three related but distinct questions (platform exclusivity, development priority, and retirement). Instead of running three separate analyses, we use one phased evidence pipeline to answer all three questions.
@@ -129,7 +134,7 @@ The evidence in this analysis ranges from directly observed usage splits to phys
 - Phase 0: Instrumentation
 - Phase 1: GA4 baseline (Gate 1 — fast-track check)
 - Stakeholder checkpoint
-- Phase 2: Proxy-context layer
+- Phase 2: Context layer: Inferring user intent
 - Phase 3: Synthesis (Gate 3A — confidence tiering)
 - Scenario B: Smartcard linkage (Gate 2B — sample-size check)
 
@@ -157,6 +162,7 @@ Step 8 is a wait step. We could already deliver the Scenario A recommendation. T
 # Phase 0: Instrumentation {#phase-0}
 
 Before any comparison between app and web is meaningful, both platforms need to report into the same place, in the same format.
+
 
 ### Setup
 
@@ -206,9 +212,11 @@ return hands this final number back to GTM, which then attaches it to the featur
 
 In block 1: routeId is available but should be read from the specific departure result being logged, in case one stop maps to more than one route.
 
+
 ### Validation
 
 A platform breakdown check confirmed that both app platforms and the website reported data consistently. We ran this check before the baseline window began. This check would have caught a version-drift issue, if one had existed. For example, one platform's software build might predate a schema update.
+
 
 ### Outcome
 
@@ -223,6 +231,7 @@ Once we had confirmed the instrumentation was correct, the 21-day baseline windo
 Raw `feature_engaged` usage rate by platform, across all four features, over the 21-day window.
 
 This query works in three stages, each building on the last:
+
 
 #### Stage 1
 
@@ -328,6 +337,7 @@ ORDER BY
 
 ![alt text](/img/posts/phase1-feature-usage-baseline.png "Feature Usage Baseline by Platform")
 
+
 ### Gate 1 — Fast-Track Check
 
 A feature with a clear platform gap needs no further analysis. We define a clear gap as roughly under 10% usage on one platform against over 50% usage on the other platform. We resolve this type of feature immediately.
@@ -386,6 +396,7 @@ ORDER BY
 
 This returns 7% viewed, 1.5% interacted, and 0.5% completed. These three figures sum to the 9% headline rate. No user is counted twice.
 
+
 ### Outcome
 
 We resolved one of the four features using Observed evidence alone. The remaining three features carried forward to the next phase.
@@ -400,6 +411,7 @@ Not every open question is best answered by more usage data. At this point, we r
 - **disruption_alerts** was reframed entirely — from a platform-investment question to a channel-effectiveness question. The communications team flagged a consistency requirement across all alert channels. A simple usage-share comparison could not capture this requirement
 - **real_time_departures** was deferred, with the client team accepting its already-strong usage gap, 82% against 34%, as sufficient evidence for continued app-first development. The team chose not to spend further analysis time on this feature, because journey_planner had already become the priority
 
+
 ### Outcome
 
 **journey_planner** proceeds to Phase 2, under its original terms. **disruption_alerts** proceeds to Phase 2, under reframed terms. **real_time_departures** is deferred, exiting the active analysis by a team decision, not because of weak evidence.
@@ -411,6 +423,7 @@ Not every open question is best answered by more usage data. At this point, we r
 ### Evidence Gathered
 
 For the escalated feature, **journey_planner**, we added three layers of context: device category (mobile web versus desktop web), time-of-day pattern, and the share of new users against returning users. A platform split could not directly show these factors on its own.
+
 
 ### First Look to Formal Query
 
@@ -635,6 +648,7 @@ ORDER BY
 
 ![alt text](/img/posts/phase2-proxy-context-analysis.png "Proxy-Context Analysis")
 
+
 ### Outcome
 
 We reframed the escalated feature's usage pattern, from an app-versus-web comparison to a pre-trip-versus-in-transit comparison. Three findings support this reframe: web engagement rates are close between mobile and desktop (81% vs 93%), ruling out a simple desktop-tool explanation; web usage clusters off-peak (73–81%) while app usage clusters in commute peaks (72%), pointing to a difference in when people act rather than where; and web skews toward new users (64%) while the app skews toward returning users (81%), suggesting the two platforms serve different moments in a traveller's journey, not just different audiences. Together, these findings support a directional conclusion, that people use the website to plan ahead and the app to travel in the moment, but this remains an inference about user intent, since the data alone cannot fully confirm it. 
@@ -651,9 +665,11 @@ This step reorganises every finding from Phases 1 and 2 into the three confidenc
 
 ![alt text](/img/posts/phase3-synthesis.png "Confidence-Tiered Synthesis")
 
+
 ### Gate 3A — Which Findings Need Further Confirmation?
 
 Only a recommendation that rests on an inferred interpretation needs further confirmation. Of the three resolved features at this point, only one recommendation qualified. The reframed alert-channel fix and the fast-tracked feature from Phase 1 were both already Observed. No further data source could add precision to these two findings.
+
 
 ### Outcome
 
@@ -1109,6 +1125,7 @@ The peak lag value is itself part of the finding, not only the correlation stren
 One limitation is worth noting. A correlation computed over roughly 500 hourly buckets, 21 days times 24 hours, per group, carries a wider margin of error than the two-decimal figures suggest. We can trust the shape and the ordering across groups but we should not treat the difference between 0.58 and 0.61 as meaningful between the two device types.
 
 ![alt text](/img/posts/scenario-b-confirmation.png "Smartcard Linkage Confirmation")
+
 
 ### Outcome
 
