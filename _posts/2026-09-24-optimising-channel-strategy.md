@@ -405,7 +405,7 @@ We resolved one of the four features using Observed evidence alone. The remainin
 
 # Stakeholder Checkpoint {#checkpoint}
 
-Not every open question is best answered by more usage data. At this point, we reviewed the remaining three features with the client team directly. We adjusted the scope as follows::
+Not every open question is best answered by more usage data. At this point, we reviewed the remaining three features with the client team directly. We adjusted the scope as follows:
 
 - **journey_planner** — the client team escalated this feature as the clear development priority, since its raw usage pattern actively contradicted the working assumption about how app and web were being used. The working assumption was that the app would see the heaviest use of core features, such as trip planning. The assumption predicted that the website would serve as a secondary, occasional-use channel. However, the raw usage split showed the opposite result: 88% of the website's active users engaged with journey_planner, against only 45% on the app - the opposite of the prediction. This unexpected result made the feature the clear priority for closer analysis
 - **disruption_alerts** was reframed entirely — from a platform-investment question to a channel-effectiveness question. The communications team flagged a consistency requirement across all alert channels. A simple usage-share comparison could not capture this requirement
